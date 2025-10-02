@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+*.log
+npm-debug.log*
+
+# Build outputs
+dist/
+build/
+.cache/
+
+# Test outputs
+test-results/
+logs/
+playwright-report/
+test-results.json
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database
+database.sqlite*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+# Build & Output
+dist/
+logs/
+.rebase-tmp-untracked/
+uploads/.DS_Store
+.env
+database.sqlite*

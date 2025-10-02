@@ -1,0 +1,27 @@
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test results
+test-results/
+playwright-report/
+
+# Snapshots
+.snapshots/
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+
+# PM2
+.pm2/
+

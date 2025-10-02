@@ -1,0 +1,430 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Prevent any blinking animations */
+* {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+}
+
+/* Override blinking animations specifically */
+@keyframes none {
+  0% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+/* Disable all pulse and blink animations */
+.animate-pulse,
+.animate-caret-blink,
+*[class*="pulse"],
+*[class*="blink"] {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Override Tailwind pulse animation */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+}
+
+/* Override any scaling pulse effects */
+@keyframes pulse-green {
+  0%, 100% { transform: scale(1); }
+}
+
+.no-blink, .no-blink * {
+  animation: none !important;
+}
+
+/* ====================================================
+   BODENSEE IMMOBILIEN THEME SYSTEM - VOLLSTÄNDIG OPTIMIERT
+   Professional Real Estate Design - September 2025
+   ==================================================== */
+
+/* Base Reset - Compatible with Theme Variables */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-base, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  font-size: var(--font-size-base, 16px);
+  line-height: var(--line-height-base, 1.6);
+  font-weight: var(--font-weight-normal, 400);
+  letter-spacing: var(--letter-spacing-base, 0px);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Smooth scrolling for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+@layer base {
+  :root {
+    /* ====================================================
+       BODENSEE BRAND COLORS - Professional Real Estate
+       Original Hex → Corrected HSL Conversion
+       ==================================================== */
+    
+    /* Original Bodensee Brand Colors (Hex) - Reference */
+    --bodensee-deep: #566B73;    /* Bodensee-Tiefe: Dunkles Blaugrau */
+    --bodensee-water: #6585CC;   /* Bodensee-Wasser: Mittleres Teal */
+    --bodensee-sand: #D9CDBF;    /* Bodensee-Sand: Warmes Beige */
+    --bodensee-stone: #8C837B;   /* Bodensee-Steine: Mittleres Grau */
+    --bodensee-shore: #BFADA3;   /* Bodensee-Ufer: Helles Taupe */
+    
+    /* Korrekte HSL-Konvertierung für shadcn/ui (Format: h s% l%) */
+    --bodensee-deep-hsl: 196 14% 39%;     /* #566B73 → hsl(196, 14%, 39%) */
+    --bodensee-water-hsl: 221 51% 60%;    /* #6585CC → hsl(221, 51%, 60%) */
+    --bodensee-sand-hsl: 35 25% 81%;      /* #D9CDBF → hsl(35, 25%, 81%) */
+    --bodensee-stone-hsl: 30 8% 51%;      /* #8C837B → hsl(30, 8%, 51%) */
+    --bodensee-shore-hsl: 25 15% 68%;     /* #BFADA3 → hsl(25, 15%, 68%) */
+    
+    /* ====================================================
+       SHADCN/UI VARIABLES - BODENSEE BRAND MAPPING
+       Professional Real Estate Design System
+       ==================================================== */
+    
+    /* Light Theme - Optimiert für Immobilien-Präsentation */
+    --background: 0 0% 100%;                          /* Pure white background */
+    --foreground: 196 14% 39%;                        /* Bodensee Deep - primary text */
+    --card: 0 0% 100%;                                /* White cards */
+    --card-foreground: 196 14% 39%;                   /* Bodensee Deep text on cards */
+    --popover: 0 0% 100%;                             /* White popover background */
+    --popover-foreground: 196 14% 39%;                /* Bodensee Deep popover text */
+    --primary: 221 51% 60%;                           /* Bodensee Water - primary actions */
+    --primary-foreground: 0 0% 100%;                  /* White text on primary */
+    --secondary: 35 25% 81%;                          /* Bodensee Sand - secondary elements */
+    --secondary-foreground: 196 14% 39%;              /* Bodensee Deep on secondary */
+    --muted: 35 25% 90%;                              /* Lighter sand for muted areas */
+    --muted-foreground: 30 8% 51%;                    /* Bodensee Stone for muted text */
+    --accent: 25 15% 68%;                             /* Bodensee Shore - accent elements */
+    --accent-foreground: 196 14% 39%;                 /* Bodensee Deep on accent */
+    --destructive: 0 84% 60%;                         /* Standard destructive red */
+    --destructive-foreground: 0 0% 100%;              /* White on destructive */
+    --border: 25 15% 85%;                             /* Light shore for borders */
+    --input: 25 15% 85%;                              /* Light shore for inputs */
+    --ring: 221 51% 60%;                              /* Bodensee Water for focus rings */
+    --radius: 0.5rem;                                 /* Standard border radius */
+
+    /* ====================================================
+       TYPOGRAPHY VARIABLES - PROFESSIONAL SYSTEM
+       Inter Font Family für moderne Immobilien-Websites
+       ==================================================== */
+    
+    --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    --font-size-base: 16px;
+    --line-height-base: 1.6;
+    --letter-spacing-base: 0px;
+    --font-weight-normal: 400;
+    --font-weight-bold: 600;
+    
+    /* Responsive Heading Scale - Professional Hierarchy */
+    --font-size-h1: 2.25rem;     /* 36px - Hero headlines */
+    --font-size-h2: 1.875rem;    /* 30px - Section headers */
+    --font-size-h3: 1.5rem;      /* 24px - Subsection headers */
+    --font-size-h4: 1.25rem;     /* 20px - Property titles */
+    --font-size-h5: 1.125rem;    /* 18px - Card titles */
+    --font-size-h6: 1rem;        /* 16px - Small headers */
+  }
+
+  /* ====================================================
+     DARK THEME - PROFESSIONAL REAL ESTATE
+     Optimiert für nächtliche Nutzung und Präsentationen
+     ==================================================== */
+  
+  .dark {
+    --background: 222 84% 5%;                         /* Very dark background */
+    --foreground: 210 40% 98%;                        /* Light text */
+    --card: 222 84% 6%;                               /* Slightly lighter cards */
+    --card-foreground: 210 40% 98%;                   /* Light text on cards */
+    --popover: 222 84% 5%;                            /* Dark popover */
+    --popover-foreground: 210 40% 98%;                /* Light popover text */
+    --primary: 188 30% 65%;                           /* Lighter bodensee-water for dark mode */
+    --primary-foreground: 222 47% 11%;                /* Dark text on primary */
+    --secondary: 217 33% 18%;                         /* Dark secondary */
+    --secondary-foreground: 210 40% 98%;              /* Light text on secondary */
+    --muted: 217 33% 18%;                             /* Dark muted background */
+    --muted-foreground: 215 20% 65%;                  /* Muted text in dark mode */
+    --accent: 217 33% 18%;                            /* Dark accent */
+    --accent-foreground: 210 40% 98%;                 /* Light text on accent */
+    --destructive: 0 63% 31%;                         /* Darker red for dark mode */
+    --destructive-foreground: 210 40% 98%;            /* Light text on destructive */
+    --border: 217 33% 18%;                            /* Dark borders */
+    --input: 217 33% 18%;                             /* Dark inputs */
+    --ring: 213 27% 84%;                              /* Light focus rings */
+  }
+
+  /* ====================================================
+     BASE ELEMENT STYLES - THEME-COMPATIBLE
+     Alle Basis-Elemente nutzen CSS-Variablen
+     ==================================================== */
+
+  * {
+    border: 0;
+  }
+  
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-family-base, 'Inter', sans-serif);
+    font-size: var(--font-size-base, 16px);
+    line-height: var(--line-height-base, 1.6);
+    letter-spacing: var(--letter-spacing-base, 0px);
+    font-weight: var(--font-weight-normal, 400);
+  }
+  
+  /* Typography Hierarchy - Professional Real Estate */
+  h1, h2, h3, h4, h5, h6 {
+    color: hsl(var(--foreground));
+    font-weight: var(--font-weight-bold, 600);
+    line-height: 1.2;
+    letter-spacing: var(--letter-spacing-base, 0px);
+    margin: 0; /* Reset margins for consistent spacing */
+  }
+  
+  h1 {
+    font-size: var(--font-size-h1, 2.25rem);
+  }
+  
+  h2 {
+    font-size: var(--font-size-h2, 1.875rem);
+  }
+  
+  h3 {
+    font-size: var(--font-size-h3, 1.5rem);
+  }
+  
+  h4 {
+    font-size: var(--font-size-h4, 1.25rem);
+  }
+  
+  h5 {
+    font-size: var(--font-size-h5, 1.125rem);
+  }
+  
+  h6 {
+    font-size: var(--font-size-h6, 1rem);
+  }
+  
+  p {
+    color: hsl(var(--foreground));
+    font-size: var(--font-size-base, 16px);
+    font-weight: var(--font-weight-normal, 400);
+    line-height: var(--line-height-base, 1.6);
+    letter-spacing: var(--letter-spacing-base, 0px);
+    margin: 0; /* Reset margins for consistent spacing */
+  }
+}
+
+/* ====================================================
+   UTILITY CLASSES - BODENSEE BRAND SYSTEM
+   ==================================================== */
+
+/* Glass morphism effects for modern UI */
+.glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Video optimization for hero sections */
+video {
+  transition: opacity 0.5s ease-in-out;
+}
+
+video:not([data-loaded="true"]) {
+  opacity: 0;
+}
+
+video:not([src]):not([srcset]) + .video-fallback,
+video[src=""] + .video-fallback,
+video[srcset=""] + .video-fallback {
+  opacity: 1 !important;
+}
+
+.hero-video {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+@layer components {
+  /* ====================================================
+     BODENSEE BRAND COMPONENT UTILITIES
+     ==================================================== */
+
+  .glassmorphism {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .sidebar-gradient {
+    background: linear-gradient(135deg, var(--bodensee-deep) 0%, var(--bodensee-water) 100%);
+  }
+
+  .bodensee-gradient {
+    background: linear-gradient(135deg, var(--bodensee-water) 0%, var(--bodensee-sand) 100%);
+  }
+
+  .natural-gradient {
+    background: linear-gradient(135deg, var(--bodensee-shore) 0%, var(--bodensee-sand) 100%);
+  }
+
+  .stats-card {
+    background: linear-gradient(135deg, rgba(101, 133, 140, 0.1) 0%, rgba(217, 205, 191, 0.1) 100%);
+  }
+
+  /* Brand Color Utilities */
+  .brand-primary {
+    background-color: var(--bodensee-water);
+  }
+
+  .brand-deep {
+    background-color: var(--bodensee-deep);
+  }
+
+  .brand-accent {
+    background-color: var(--bodensee-sand);
+  }
+
+  .brand-stone {
+    background-color: var(--bodensee-stone);
+  }
+
+  .brand-shore {
+    background-color: var(--bodensee-shore);
+  }
+
+  /* Text Color Utilities */
+  .text-brand-primary {
+    color: var(--bodensee-water);
+  }
+
+  .text-brand-deep {
+    color: var(--bodensee-deep);
+  }
+
+  .text-brand-accent {
+    color: var(--bodensee-sand);
+  }
+
+  .text-brand-stone {
+    color: var(--bodensee-stone);
+  }
+
+  /* Border Color Utilities */
+  .border-brand-primary {
+    border-color: var(--bodensee-water);
+  }
+
+  .border-brand-deep {
+    border-color: var(--bodensee-deep);
+  }
+
+  /* Interactive States */
+  .hover\:brand-primary:hover {
+    background-color: var(--bodensee-water);
+  }
+
+  .hover\:brand-deep:hover {
+    background-color: var(--bodensee-deep);
+  }
+
+  .focus\:ring-brand-primary:focus {
+    --tw-ring-color: var(--bodensee-water);
+  }
+}
+
+@layer utilities {
+  /* ====================================================
+     ANIMATION UTILITIES - PROFESSIONAL TRANSITIONS
+     ==================================================== */
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.6s ease-out forwards;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+/* ====================================================
+   END BODENSEE THEME SYSTEM
+   ==================================================== */
+
+/* ====================================================
+   HERO SECTION CUSTOM STYLES
+   ==================================================== */
+
+.hero-gradient {
+  background: linear-gradient(
+    135deg,
+    rgba(86, 107, 115, 0.8) 0%,
+    rgba(101, 133, 140, 0.6) 50%,
+    rgba(217, 205, 191, 0.4) 100%
+  );
+}
+
+.hero-background {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.sidebar-gradient {
+  background: linear-gradient(135deg, #566B73 0%, #65858C 100%);
+}
