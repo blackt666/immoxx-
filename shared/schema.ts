@@ -35,9 +35,9 @@ export const properties = sqliteTable('properties', {
   rooms: integer('rooms'),
   bedrooms: integer('bedrooms'),
   bathrooms: integer('bathrooms'),
-  
+
   // Location
-  address: text('address').notNull(),
+  location: text('location').notNull(),
   city: text('city').notNull(),
   postalCode: text('postal_code'),
   region: text('region'),

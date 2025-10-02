@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -62,6 +63,16 @@ export default function CRMDashboard() {
   const [showLeadDetail, setShowLeadDetail] = useState(false);
   const [showNewLead, setShowNewLead] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  // DND Kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // Fetch leads
   const { data: leadsData, isLoading, error } = useQuery<LeadsResponse>({
@@ -146,6 +157,39 @@ export default function CRMDashboard() {
     },
   });
 
+  // Drag & Drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    const leadId = active.id as string;
+    const newStage = over.id as string;
+
+    // Find the lead
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead || lead.pipeline_stage === newStage) return;
+
+    // Optimistic update
+    queryClient.setQueryData(['crm-leads', selectedFilter], (old: LeadsResponse | undefined) => {
+      if (!old) return old;
+      return {
+        ...old,
+        data: old.data.map(l =>
+          l.id === leadId ? { ...l, pipeline_stage: newStage } : l
+        ),
+      };
+    });
+
+    // Move lead
+    moveLeadMutation.mutate({ leadId, newStage });
+  };
+
   // Filter leads by search query
   const filteredLeads = leads.filter(lead => {
     if (!searchQuery) return true;
@@ -191,15 +235,29 @@ export default function CRMDashboard() {
     );
   };
 
-  // Lead card component
-  const LeadCard = ({ lead }: { lead: Lead }) => (
-    <Card
-      className="p-4 mb-3 hover:shadow-md transition-shadow cursor-pointer"
-      onClick={() => {
-        setSelectedLead(lead);
-        setShowLeadDetail(true);
-      }}
-    >
+  // Draggable Lead Card component
+  const DraggableLeadCard = ({ lead }: { lead: Lead }) => {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+      id: lead.id,
+    });
+
+    const style = {
+      transform: CSS.Translate.toString(transform),
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+        <Card
+          className="p-4 mb-3 hover:shadow-md transition-shadow cursor-move"
+          onClick={(e) => {
+            // Only open detail if not dragging
+            if (!isDragging) {
+              setSelectedLead(lead);
+              setShowLeadDetail(true);
+            }
+          }}
+        >
       <div className="flex justify-between items-start mb-2">
         <div>
           <h4 className="font-semibold text-sm" style={{ color: 'var(--bodensee-deep)' }}>
@@ -253,8 +311,48 @@ export default function CRMDashboard() {
           </Button>
         </div>
       </div>
-    </Card>
-  );
+        </Card>
+      </div>
+    );
+  };
+
+  // Droppable Stage Column component
+  const DroppableStageColumn = ({ stage, leads }: { stage: any; leads: Lead[] }) => {
+    const { setNodeRef, isOver } = useDroppable({
+      id: stage.id,
+    });
+
+    return (
+      <div
+        ref={setNodeRef}
+        className={`flex-shrink-0 w-80 ${isOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
+      >
+        <div className="rounded-t-lg p-3 mb-2" style={stage.colorStyle}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{stage.icon}</span>
+              <h3 className="font-semibold">{stage.label}</h3>
+            </div>
+            <Badge variant="secondary">
+              {leads.length}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-b-lg p-3 min-h-[500px] max-h-[600px] overflow-y-auto">
+          {leads.length > 0 ? (
+            leads.map(lead => (
+              <DraggableLeadCard key={lead.id} lead={lead} />
+            ))
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <p className="text-sm">Keine Leads</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -412,38 +510,34 @@ export default function CRMDashboard() {
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <div className="overflow-x-auto">
-        <div className="inline-flex gap-4 min-w-full pb-4">
-          {PIPELINE_STAGES.map(stage => (
-            <div key={stage.id} className="flex-shrink-0 w-80">
-              <div className="rounded-t-lg p-3 mb-2" style={stage.colorStyle}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{stage.icon}</span>
-                    <h3 className="font-semibold">{stage.label}</h3>
-                  </div>
-                  <Badge variant="secondary">
-                    {leadsByStage[stage.id]?.length || 0}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-b-lg p-3 min-h-[500px] max-h-[600px] overflow-y-auto">
-                {leadsByStage[stage.id]?.length > 0 ? (
-                  leadsByStage[stage.id].map(lead => (
-                    <LeadCard key={lead.id} lead={lead} />
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-400">
-                    <p className="text-sm">Keine Leads</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+      {/* Kanban Board with Drag & Drop */}
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="overflow-x-auto">
+          <div className="inline-flex gap-4 min-w-full pb-4">
+            {PIPELINE_STAGES.map(stage => (
+              <DroppableStageColumn
+                key={stage.id}
+                stage={stage}
+                leads={leadsByStage[stage.id] || []}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+
+        <DragOverlay>
+          {activeId ? (
+            <Card className="p-4 opacity-90 shadow-2xl" style={{ backgroundColor: 'var(--bodensee-sand)' }}>
+              <div className="text-sm font-semibold" style={{ color: 'var(--bodensee-deep)' }}>
+                Verschiebe Lead...
+              </div>
+            </Card>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Calendar Integration Info */}
       <Card className="mt-6 p-4">
