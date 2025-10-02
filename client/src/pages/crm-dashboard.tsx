@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
 import {
   AlertCircle,
 } from 'lucide-react';
+import { LeadDetailModal } from '../components/crm/LeadDetailModal';
+import { NewLeadModal } from '../components/crm/NewLeadModal';
+import { useToast } from '../hooks/use-toast';
 
 // Types
 interface Lead {
@@ -50,8 +55,13 @@ const PIPELINE_STAGES = [
 
 export default function CRMDashboard() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [showLeadDetail, setShowLeadDetail] = useState(false);
+  const [showNewLead, setShowNewLead] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch leads
   const { data: leadsData, isLoading, error } = useQuery<LeadsResponse>({
@@ -70,9 +80,87 @@ export default function CRMDashboard() {
 
   const leads = leadsData?.data || [];
 
+  // Create lead mutation
+  const createLeadMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch('/api/crm/v2/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Failed to create lead');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
+      toast({
+        title: 'Lead erstellt',
+        description: 'Der neue Lead wurde erfolgreich erstellt.',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Fehler',
+        description: 'Lead konnte nicht erstellt werden.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Move lead stage mutation
+  const moveLeadMutation = useMutation({
+    mutationFn: async ({ leadId, newStage }: { leadId: string; newStage: string }) => {
+      const res = await fetch(`/api/crm/v2/leads/${leadId}/move-stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pipeline_stage: newStage }),
+      });
+      if (!res.ok) throw new Error('Failed to move lead');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
+      toast({
+        title: 'Lead verschoben',
+        description: 'Der Lead wurde erfolgreich verschoben.',
+      });
+    },
+  });
+
+  // Delete lead mutation
+  const deleteLeadMutation = useMutation({
+    mutationFn: async (leadId: string) => {
+      const res = await fetch(`/api/crm/v2/leads/${leadId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete lead');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
+      setShowLeadDetail(false);
+      toast({
+        title: 'Lead gelöscht',
+        description: 'Der Lead wurde erfolgreich gelöscht.',
+      });
+    },
+  });
+
+  // Filter leads by search query
+  const filteredLeads = leads.filter(lead => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      lead.first_name.toLowerCase().includes(query) ||
+      lead.last_name.toLowerCase().includes(query) ||
+      lead.email.toLowerCase().includes(query) ||
+      (lead.phone && lead.phone.includes(query))
+    );
+  });
+
   // Group leads by pipeline stage
   const leadsByStage = PIPELINE_STAGES.reduce((acc, stage) => {
-    acc[stage.id] = leads.filter(lead => lead.pipeline_stage === stage.id);
+    acc[stage.id] = filteredLeads.filter(lead => lead.pipeline_stage === stage.id);
     return acc;
   }, {} as Record<string, Lead[]>);
 
@@ -105,7 +193,13 @@ export default function CRMDashboard() {
 
   // Lead card component
   const LeadCard = ({ lead }: { lead: Lead }) => (
-    <Card className="p-4 mb-3 hover:shadow-md transition-shadow cursor-pointer">
+    <Card
+      className="p-4 mb-3 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => {
+        setSelectedLead(lead);
+        setShowLeadDetail(true);
+      }}
+    >
       <div className="flex justify-between items-start mb-2">
         <div>
           <h4 className="font-semibold text-sm" style={{ color: 'var(--bodensee-deep)' }}>
@@ -148,13 +242,13 @@ export default function CRMDashboard() {
           Score: {lead.score}
         </div>
         <div className="flex gap-1">
-          <Button size="sm" variant="ghost" className="h-7 px-2">
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => e.stopPropagation()}>
             <span>📞</span>
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 px-2">
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => e.stopPropagation()}>
             <span>✉️</span>
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 px-2">
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => e.stopPropagation()}>
             <span>📅</span>
           </Button>
         </div>
@@ -258,6 +352,17 @@ export default function CRMDashboard() {
         </Card>
       </div>
 
+      {/* Search Bar */}
+      <div className="mb-4">
+        <Input
+          type="search"
+          placeholder="🔍 Lead suchen (Name, E-Mail, Telefon)..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-md"
+        />
+      </div>
+
       {/* Actions Bar */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex gap-2">
@@ -296,7 +401,11 @@ export default function CRMDashboard() {
             <span className="mr-2">⬇️</span>
             Export
           </Button>
-          <Button size="sm" style={{ backgroundColor: 'var(--bodensee-water)', color: 'white' }}>
+          <Button
+            size="sm"
+            style={{ backgroundColor: 'var(--bodensee-water)', color: 'white' }}
+            onClick={() => setShowNewLead(true)}
+          >
             <span className="mr-2">➕</span>
             Neuer Lead
           </Button>
@@ -365,6 +474,25 @@ export default function CRMDashboard() {
         </div>
       </Card>
       </div>
+
+      {/* Modals */}
+      <LeadDetailModal
+        lead={selectedLead}
+        open={showLeadDetail}
+        onClose={() => {
+          setShowLeadDetail(false);
+          setSelectedLead(null);
+        }}
+        onDelete={(leadId) => deleteLeadMutation.mutate(leadId)}
+      />
+
+      <NewLeadModal
+        open={showNewLead}
+        onClose={() => setShowNewLead(false)}
+        onSubmit={async (data) => {
+          await createLeadMutation.mutateAsync(data);
+        }}
+      />
     </div>
   );
 }
