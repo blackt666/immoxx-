@@ -10,8 +10,10 @@ import { sql } from 'drizzle-orm';
 // User authentication and administration
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  username: text('username').notNull().unique(),
   email: text('email').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  password: text('password').notNull(),
+  passwordHash: text('password_hash'),
   name: text('name').notNull(),
   role: text('role').notNull().default('admin'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
