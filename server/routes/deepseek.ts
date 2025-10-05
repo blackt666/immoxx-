@@ -61,7 +61,7 @@ router.post('/valuation', async (req: Request, res: Response) => {
     const validatedData = propertyValuationSchema.parse(req.body);
     const deepseek = getDeepSeekService();
 
-    const valuation = await deepseek.valuateProperty(validatedData);
+    const valuation = await deepseek.valuateProperty(validatedData as any);
 
     res.json({
       success: true,
@@ -94,7 +94,7 @@ router.post('/market-analysis', async (req: Request, res: Response) => {
     const validatedData = marketAnalysisSchema.parse(req.body);
     const deepseek = getDeepSeekService();
 
-    const analysis = await deepseek.analyzeMarket(validatedData);
+    const analysis = await deepseek.analyzeMarket(validatedData as any);
 
     res.json({
       success: true,
@@ -131,7 +131,7 @@ router.post('/generate-description', async (req: Request, res: Response) => {
     const validatedData = propertyDescriptionSchema.parse(req.body);
     const deepseek = getDeepSeekService();
 
-    const description = await deepseek.generatePropertyDescription(validatedData);
+    const description = await deepseek.generatePropertyDescription(validatedData as any);
 
     res.json({
       success: true,

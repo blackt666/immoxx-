@@ -101,18 +101,34 @@ router.post('/api/crm/leads', async (req, res) => {
     // Normalize probability
     data.probability = validateProbability(data.probability);
     
+    // Convert optional fields to null instead of undefined, but keep required fields
+    const insertData = {
+      customerId: data.customerId,
+      stage: data.stage,
+      dealType: data.dealType,
+      value: data.value,
+      probability: data.probability,
+      propertyId: data.propertyId ?? null,
+      expectedCloseDate: data.expectedCloseDate ?? null,
+      title: data.title ?? null,
+      notes: data.notes ?? null,
+      assignedTo: data.assignedTo ?? null,
+    };
+    
     // Insert lead
-    const [newLead] = await db.insert(leads).values(data).returning();
+    const [newLead] = await db.insert(leads).values(insertData).returning();
     
     // Fetch with customer info
-    const [leadWithCustomer] = await db
+    const query = db
       .select({
         lead: leads,
         customer: customers
       })
       .from(leads)
-      .leftJoin(customers, eq(leads.customerId, customers.id))
-      .where(eq(leads.id, newLead.id));
+      .leftJoin(customers, eq(leads.customerId, customers.id));
+    
+    const result = await (query.where(eq(leads.id, newLead.id)) as typeof query);
+    const [leadWithCustomer] = result;
     
     res.status(201).json({
       ...leadWithCustomer.lead,

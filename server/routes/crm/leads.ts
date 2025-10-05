@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { leadService } from "../../services/crm/leadService";
+import { leadService, CreateLeadInput } from "../../services/crm/leadService";
 import { z } from "zod";
 
 const router = Router();
@@ -212,7 +212,6 @@ router.get("/:id", async (req: Request, res: Response) => {
 
 // =====================================================
 // POST /api/crm/leads - Create new lead
-// =====================================================
 router.post("/", async (req: Request, res: Response) => {
   try {
     const validatedData = createLeadSchema.parse(req.body);
@@ -223,7 +222,7 @@ router.post("/", async (req: Request, res: Response) => {
     const lead = await leadService.createLead({
       ...validatedData,
       created_by: userId,
-    });
+    } as CreateLeadInput);
 
     res.status(201).json({
       success: true,

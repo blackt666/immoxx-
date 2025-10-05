@@ -124,7 +124,7 @@ router.get('/activities', async (req: Request, res: Response) => {
       .select()
       .from(crmActivities)
       .where(
-        gte(crmActivities.scheduled_at, now.toISOString())
+        gte(crmActivities.scheduled_at, now)
       )
       .limit(100);
 
@@ -163,12 +163,12 @@ router.get('/all', async (req: Request, res: Response) => {
       db
         .select()
         .from(crmTasks)
-        .where(gte(crmTasks.due_date, now.toISOString()))
+        .where(gte(crmTasks.due_date, now))
         .limit(50),
       db
         .select()
         .from(crmActivities)
-        .where(gte(crmActivities.scheduled_at, now.toISOString()))
+        .where(gte(crmActivities.scheduled_at, now))
         .limit(50),
     ]);
 

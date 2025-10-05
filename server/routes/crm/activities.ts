@@ -124,7 +124,20 @@ router.post("/", async (req: Request, res: Response) => {
       .insert(crmActivities)
       .values({
         id: randomUUID(),
-        ...validatedData,
+        activity_type: validatedData.activity_type,
+        scheduled_at: validatedData.scheduled_at ? new Date(validatedData.scheduled_at) : null,
+        completed_at: validatedData.completed_at ? new Date(validatedData.completed_at) : null,
+        lead_id: validatedData.lead_id ?? null,
+        contact_id: validatedData.contact_id ?? null,
+        property_id: validatedData.property_id ?? null,
+        subject: validatedData.subject ?? null,
+        description: validatedData.description ?? null,
+        outcome: validatedData.outcome ?? null,
+        duration_minutes: validatedData.duration_minutes ?? null,
+        assigned_to: validatedData.assigned_to ?? null,
+        email_from: validatedData.email_from ?? null,
+        email_to: validatedData.email_to ?? null,
+        email_subject: validatedData.email_subject ?? null,
         created_by: userId ?? null,
         created_at: new Date(),
       })

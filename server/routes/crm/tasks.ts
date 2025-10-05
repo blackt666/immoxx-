@@ -1,8 +1,9 @@
 import { Router, Request, Response } from "express";
 import { db } from "../../db";
 import { crmTasks } from "../../database/schema/crm";
-import { eq, and, desc, asc, lte, gte, sql } from "drizzle-orm";
+import { eq, and, asc, lte, gte } from "drizzle-orm";
 import { z } from "zod";
+import { randomUUID } from "crypto";
 
 const router = Router();
 
@@ -56,7 +57,7 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      query = query.where(and(...conditions)) as typeof query;
     }
 
     const tasks = await query
@@ -81,7 +82,7 @@ router.get("/", async (req: Request, res: Response) => {
 // =====================================================
 router.get("/overdue", async (req: Request, res: Response) => {
   try {
-    const now = new Date().toISOString();
+    const now = new Date();
 
     const tasks = await db
       .select()
@@ -120,8 +121,8 @@ router.get("/upcoming", async (req: Request, res: Response) => {
       .from(crmTasks)
       .where(
         and(
-          gte(crmTasks.due_date, now.toISOString()),
-          lte(crmTasks.due_date, nextWeek.toISOString()),
+          gte(crmTasks.due_date, now),
+          lte(crmTasks.due_date, nextWeek),
           eq(crmTasks.status, "todo")
         )
       )
@@ -179,13 +180,22 @@ router.post("/", async (req: Request, res: Response) => {
   try {
     const validatedData = createTaskSchema.parse(req.body);
 
-    const userId = (req as any).user?.id;
+    const userId = (req as { user?: { id: number } }).user?.id;
 
     const [task] = await db
       .insert(crmTasks)
       .values({
-        ...validatedData,
-        created_by: userId,
+        id: randomUUID(),
+        title: validatedData.title,
+        description: validatedData.description ?? null,
+        priority: validatedData.priority,
+        status: validatedData.status,
+        due_date: validatedData.due_date ? new Date(validatedData.due_date) : null,
+        reminder_at: validatedData.reminder_at ? new Date(validatedData.reminder_at) : null,
+        lead_id: validatedData.lead_id ?? null,
+        contact_id: validatedData.contact_id ?? null,
+        assigned_to: validatedData.assigned_to ?? null,
+        created_by: userId ?? null,
         created_at: new Date(),
       })
       .returning();
@@ -222,7 +232,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
     const validatedData = updateTaskSchema.parse(req.body);
 
     // If status is changed to 'done', set completed_at
-    const updateData: any = { ...validatedData };
+    const updateData: Record<string, unknown> = { ...validatedData };
     if (validatedData.status === "done") {
       updateData.completed_at = new Date();
     }
