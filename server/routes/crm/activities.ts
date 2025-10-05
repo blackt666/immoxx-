@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { crmActivities } from "../../database/schema/crm";
 import { eq, desc, and } from "drizzle-orm";
 import { z } from "zod";
+import { randomUUID } from "crypto";
 
 const router = Router();
 
@@ -58,7 +59,7 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      query = query.where(and(...conditions)) as typeof query;
     }
 
     const activities = await query
@@ -117,13 +118,14 @@ router.post("/", async (req: Request, res: Response) => {
   try {
     const validatedData = createActivitySchema.parse(req.body);
 
-    const userId = (req as any).user?.id;
+    const userId = (req as { user?: { id: number } }).user?.id;
 
     const [activity] = await db
       .insert(crmActivities)
       .values({
+        id: randomUUID(),
         ...validatedData,
-        created_by: userId,
+        created_by: userId ?? null,
         created_at: new Date(),
       })
       .returning();

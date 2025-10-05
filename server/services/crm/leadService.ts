@@ -1,5 +1,6 @@
+import { randomUUID } from "crypto";
 import { db } from "../../db";
-import { eq, and, gte, lte, desc, asc, sql, inArray, isNull } from "drizzle-orm";
+import { eq, and, gte, desc, asc, sql, isNull } from "drizzle-orm";
 import { crmLeads, crmActivities, crmTasks } from "../../database/schema/crm";
 
 export interface LeadFilters {
@@ -105,7 +106,7 @@ export class LeadService {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      query = query.where(and(...conditions)) as typeof query;
     }
 
     // Order by score (hot leads first), then by created_at
@@ -167,10 +168,13 @@ export class LeadService {
    * Create a new lead
    */
   async createLead(data: CreateLeadInput) {
+    const leadId = randomUUID();
     const [lead] = await db
       .insert(crmLeads)
       .values({
+        id: leadId,
         ...data,
+        tags: data.tags ? JSON.stringify(data.tags) : undefined,
         score: 0, // Initial score
         temperature: "cold",
         status: "new",
@@ -190,6 +194,7 @@ export class LeadService {
 
     // Create initial activity (Lead Created)
     await db.insert(crmActivities).values({
+      id: randomUUID(),
       lead_id: lead.id,
       activity_type: "note",
       subject: "Lead Created",
@@ -214,7 +219,7 @@ export class LeadService {
       throw new Error("Lead not found");
     }
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...data,
       updated_at: new Date(),
     };
@@ -225,6 +230,7 @@ export class LeadService {
 
       // Create activity for stage change
       await db.insert(crmActivities).values({
+        id: randomUUID(),
         lead_id: leadId,
         activity_type: "note",
         subject: "Pipeline Stage Changed",
@@ -290,6 +296,7 @@ export class LeadService {
 
     // Log activity
     await db.insert(crmActivities).values({
+      id: randomUUID(),
       lead_id: leadId,
       activity_type: "note",
       subject: "Pipeline Stage Changed",
@@ -304,14 +311,17 @@ export class LeadService {
    * Recalculate lead score
    */
   async recalculateScore(leadId: string) {
-    // Use PostgreSQL function to calculate score
-    const result = await db.execute(sql`
-      SELECT calculate_lead_score(${leadId}::uuid) as score
-    `);
+    // Simple score calculation for SQLite (no PostgreSQL function)
+    // Count activities to calculate basic score
+    const activities = await db
+      .select()
+      .from(crmActivities)
+      .where(eq(crmActivities.lead_id, leadId));
 
-    const score = result.rows[0]?.score || 0;
+    // Simple scoring: 10 points per activity
+    const score = Math.min(activities.length * 10, 100);
 
-    // Update lead with new score (trigger will update temperature)
+    // Update lead with new score
     const [lead] = await db
       .update(crmLeads)
       .set({ score })
@@ -337,6 +347,7 @@ export class LeadService {
 
     // Log activity
     await db.insert(crmActivities).values({
+      id: randomUUID(),
       lead_id: leadId,
       activity_type: "note",
       subject: "Lead Assigned",
@@ -372,7 +383,7 @@ export class LeadService {
       "lost",
     ];
 
-    const leadsByStage: Record<string, any[]> = {};
+    const leadsByStage: Record<string, unknown[]> = {};
 
     for (const stage of stages) {
       const leads = await db
@@ -407,7 +418,7 @@ export class LeadService {
     const leads = await db
       .select()
       .from(crmLeads)
-      .where(eq(crmLeads.assigned_to, null))
+      .where(isNull(crmLeads.assigned_to))
       .orderBy(desc(crmLeads.created_at));
 
     return leads;

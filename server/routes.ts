@@ -2110,7 +2110,12 @@ export async function registerRoutes(app: Express) {
         const filteredLeads = filterSensitiveData(leads, 'leads');
         const filteredCustomerSegments = filterSensitiveData(customerSegments, 'customerSegments'); // SECURITY FIX: Now filtered
         const filteredCustomerSegmentMemberships = filterSensitiveData(customerSegmentMemberships, 'customerSegmentMemberships'); // SECURITY FIX: Now filtered
-        const filteredDesignSettings = filterSensitiveData(Array.isArray(designSettings) ? designSettings : [designSettings], 'designSettings');
+        const filteredDesignSettings = filterSensitiveData(
+          Array.isArray(designSettings) 
+            ? designSettings 
+            : designSettings ? [designSettings] : [], 
+          'designSettings'
+        );
         const filteredCalendarConnections = filterSensitiveData(calendarConnections, 'calendarConnections');
         const filteredCalendarEvents = filterSensitiveData(calendarEvents, 'calendarEvents');
         const filteredCalendarSyncLogs = filterSensitiveData(calendarSyncLogs, 'calendarSyncLogs');

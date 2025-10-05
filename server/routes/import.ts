@@ -10,6 +10,9 @@ import { importUpload } from '../lib/multer-config.js';
 
 const router = Router();
 
+// Upload directory from multer config
+const uploadDir = path.join(process.cwd(), 'uploads');
+
 // Using shared multer configuration from lib/multer-config.ts
 
 // Proper delimiter detection function
@@ -199,14 +202,6 @@ async function processCSVInBatches(
     
     // Pipe the read stream through Papa Parse
     readStream.pipe(papaStream);
-    
-    // Pipe the file stream to the parser
-    stream.pipe(parser);
-    
-    stream.on('error', (error) => {
-      console.error('❌ File stream error:', error);
-      reject(error);
-    });
   });
 }
 

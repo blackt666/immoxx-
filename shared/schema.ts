@@ -286,6 +286,7 @@ export const calendarSyncLogs = sqliteTable('calendar_sync_logs', {
   message: text('message'),
   eventCount: integer('event_count').default(0),
   errorDetails: text('error_details'), // JSON string
+  dataSnapshot: text('data_snapshot'), // JSON string for conflict resolution data
   operation: text('operation'),
   startedAt: integer('started_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)

@@ -1,9 +1,20 @@
 import { db } from '../db.js';
-import * as schema from '@shared/schema';
-import { eq, and } from 'drizzle-orm';
-import type { Appointment, CalendarEvent, InsertCalendarSyncLog } from '@shared/schema';
+import { eq } from 'drizzle-orm';
+import type { Appointment, InsertCalendarSyncLog } from '@shared/schema';
 import { appointments, calendarEvents, calendarSyncLogs } from '@shared/schema';
-import { addMinutes, isAfter, isBefore, differenceInMinutes } from 'date-fns';
+import { isAfter, differenceInMinutes } from 'date-fns';
+
+// Type for external calendar event data (Google/Apple)
+export interface CalendarEventData {
+  id?: string;
+  title?: string;
+  description?: string;
+  startTime?: string | Date;
+  endTime?: string | Date;
+  location?: string;
+  lastModified?: Date;
+  [key: string]: unknown;
+}
 
 export interface SyncConflict {
   id: string;
@@ -11,11 +22,11 @@ export interface SyncConflict {
   appointmentId?: string;
   calendarEventId?: string;
   crmData?: Partial<Appointment>;
-  calendarData?: any;
+  calendarData?: CalendarEventData;
   conflictDetails: {
     field?: string;
-    crmValue?: any;
-    calendarValue?: any;
+    crmValue?: unknown;
+    calendarValue?: unknown;
     lastCrmUpdate?: Date;
     lastCalendarUpdate?: Date;
     timeDifference?: number;
@@ -47,7 +58,7 @@ export class CalendarConflictResolver {
    */
   async detectConflicts(
     appointment: Appointment,
-    calendarEvent: any,
+    calendarEvent: CalendarEventData,
     provider: 'google' | 'apple'
   ): Promise<SyncConflict[]> {
     const conflicts: SyncConflict[] = [];
@@ -134,9 +145,9 @@ export class CalendarConflictResolver {
         case 'data_mismatch':
           return await this.resolveDataMismatch(conflict, strategy);
         case 'duplicate_event':
-          return await this.resolveDuplicateEvent(conflict, strategy);
+          return await this.resolveDuplicateEvent();
         case 'deletion_conflict':
-          return await this.resolveDeletionConflict(conflict, strategy);
+          return await this.resolveDeletionConflict();
         default:
           return { success: false, appliedStrategy: 'unknown' };
       }
@@ -149,7 +160,9 @@ export class CalendarConflictResolver {
   /**
    * Detect timing conflicts between appointment and calendar event
    */
-  private detectTimingConflict(appointment: Appointment, calendarEvent: any): SyncConflict | null {
+  private detectTimingConflict(appointment: Appointment, calendarEvent: CalendarEventData): SyncConflict | null {
+    if (!calendarEvent.startTime || !calendarEvent.endTime) return null;
+    
     const appointmentStart = new Date(appointment.startTime);
     const appointmentEnd = new Date(appointment.endTime);
 
@@ -185,7 +198,7 @@ export class CalendarConflictResolver {
   /**
    * Detect data mismatches between appointment and calendar event
    */
-  private detectDataMismatches(appointment: Appointment, calendarEvent: any): SyncConflict[] {
+  private detectDataMismatches(appointment: Appointment, calendarEvent: CalendarEventData): SyncConflict[] {
     const conflicts: SyncConflict[] = [];
 
     // Title/Summary mismatch
@@ -251,7 +264,7 @@ export class CalendarConflictResolver {
   /**
    * Detect duplicate events in calendar
    */
-  private async detectDuplicateEvents(appointment: Appointment, calendarEvent: any): Promise<SyncConflict | null> {
+  private async detectDuplicateEvents(appointment: Appointment, calendarEvent: CalendarEventData): Promise<SyncConflict | null> {
     try {
       // Check if there are existing calendar events for the same appointment
       const existingEvents = await db
@@ -287,26 +300,28 @@ export class CalendarConflictResolver {
   /**
    * Normalize calendar event data across providers
    */
-  private normalizeCalendarEvent(calendarEvent: any, provider: 'google' | 'apple'): any {
+  private normalizeCalendarEvent(calendarEvent: CalendarEventData, provider: 'google' | 'apple'): CalendarEventData {
     if (provider === 'google') {
+      const start = calendarEvent.start as { dateTime?: string; date?: string } | undefined;
+      const end = calendarEvent.end as { dateTime?: string; date?: string } | undefined;
       return {
         id: calendarEvent.id,
-        title: calendarEvent.summary,
-        description: calendarEvent.description,
-        startTime: calendarEvent.start?.dateTime || calendarEvent.start?.date,
-        endTime: calendarEvent.end?.dateTime || calendarEvent.end?.date,
-        location: calendarEvent.location,
-        status: calendarEvent.status,
+        title: calendarEvent.summary as string | undefined,
+        description: calendarEvent.description as string | undefined,
+        startTime: start?.dateTime || start?.date,
+        endTime: end?.dateTime || end?.date,
+        location: calendarEvent.location as string | undefined,
+        status: calendarEvent.status as string | undefined,
       };
     } else if (provider === 'apple') {
       return {
-        id: calendarEvent.uid,
-        title: calendarEvent.summary,
-        description: calendarEvent.description,
-        startTime: calendarEvent.dtstart,
-        endTime: calendarEvent.dtend,
-        location: calendarEvent.location,
-        status: calendarEvent.status,
+        id: calendarEvent.uid as string | undefined,
+        title: calendarEvent.summary as string | undefined,
+        description: calendarEvent.description as string | undefined,
+        startTime: calendarEvent.dtstart as string | Date | undefined,
+        endTime: calendarEvent.dtend as string | Date | undefined,
+        location: calendarEvent.location as string | undefined,
+        status: calendarEvent.status as string | undefined,
       };
     }
 
@@ -357,14 +372,16 @@ export class CalendarConflictResolver {
         case 'calendar_wins':
           // Update CRM with calendar timing
           const calendarData = conflict.calendarData;
-          await db
-            .update(appointments)
-            .set({
-              startTime: new Date(calendarData.startTime),
-              endTime: new Date(calendarData.endTime),
-              updatedAt: new Date(),
-            })
-            .where(eq(appointments.id, conflict.appointmentId));
+          if (conflict.appointmentId && calendarData?.startTime && calendarData?.endTime) {
+            await db
+              .update(appointments)
+              .set({
+                startTime: new Date(calendarData.startTime),
+                endTime: new Date(calendarData.endTime),
+                updatedAt: new Date(),
+              })
+              .where(eq(appointments.id, parseInt(conflict.appointmentId)));
+          }
           return { success: true, appliedStrategy: 'calendar_wins' };
         
         case 'newest_wins':
@@ -419,24 +436,24 @@ export class CalendarConflictResolver {
         
         case 'calendar_wins':
           // Update CRM with calendar value
-          const updateData: any = {};
+          const updateData: Record<string, unknown> = {};
           if (field === 'title') updateData.title = calendarValue;
           if (field === 'location') updateData.location = calendarValue;
           if (field === 'description') updateData.notes = calendarValue;
           
-          if (Object.keys(updateData).length > 0) {
+          if (Object.keys(updateData).length > 0 && conflict.appointmentId) {
             updateData.updatedAt = new Date();
             await db
               .update(appointments)
-              .set(updateData)
-              .where(eq(appointments.id, conflict.appointmentId));
+              .set(updateData as Partial<Appointment>)
+              .where(eq(appointments.id, parseInt(conflict.appointmentId)));
           }
           
           return { success: true, appliedStrategy: 'calendar_wins' };
         
         case 'merge':
           // Merge values (for text fields)
-          if (field === 'description' && crmValue && calendarValue) {
+          if (field === 'description' && crmValue && calendarValue && conflict.appointmentId) {
             const mergedValue = `${crmValue}\n\n[Calendar Note: ${calendarValue}]`;
             await db
               .update(appointments)
@@ -444,7 +461,7 @@ export class CalendarConflictResolver {
                 notes: mergedValue,
                 updatedAt: new Date(),
               })
-              .where(eq(appointments.id, conflict.appointmentId));
+              .where(eq(appointments.id, parseInt(conflict.appointmentId)));
             return { success: true, appliedStrategy: 'merge' };
           }
           // Fall back to CRM wins for non-mergeable fields
@@ -462,10 +479,7 @@ export class CalendarConflictResolver {
   /**
    * Resolve duplicate events
    */
-  private async resolveDuplicateEvent(
-    conflict: SyncConflict,
-    strategy: ConflictResolutionStrategy
-  ): Promise<{ success: boolean; appliedStrategy: string }> {
+  private async resolveDuplicateEvent(): Promise<{ success: boolean; appliedStrategy: string }> {
     // Duplicate events typically require manual review
     // For now, we'll just log and mark for manual resolution
     return { success: false, appliedStrategy: 'manual_review_required' };
@@ -474,10 +488,7 @@ export class CalendarConflictResolver {
   /**
    * Resolve deletion conflicts
    */
-  private async resolveDeletionConflict(
-    conflict: SyncConflict,
-    strategy: ConflictResolutionStrategy
-  ): Promise<{ success: boolean; appliedStrategy: string }> {
+  private async resolveDeletionConflict(): Promise<{ success: boolean; appliedStrategy: string }> {
     // Deletion conflicts are complex and usually require manual review
     return { success: false, appliedStrategy: 'manual_review_required' };
   }
@@ -494,19 +505,17 @@ export class CalendarConflictResolver {
     try {
       const logData: InsertCalendarSyncLog = {
         connectionId: null, // Conflict resolution is cross-connection
-        appointmentId: conflict.appointmentId,
+        syncType: 'export',
         operation: 'sync',
-        direction: 'crm_to_calendar',
         status: result === 'auto' ? 'success' : 'error',
-        dataSnapshot: {
+        message: result === 'pending' ? 'Conflict requires manual resolution' : 'Conflict resolved',
+        dataSnapshot: JSON.stringify({
           conflict,
           strategy,
           result,
           resolvedBy,
-        },
-        errorMessage: result === 'pending' ? 'Conflict requires manual resolution' : undefined,
-        completedAt: new Date(),
-        duration: 0,
+          appointmentId: conflict.appointmentId,
+        }),
       };
 
       await db.insert(calendarSyncLogs).values(logData);
@@ -516,50 +525,115 @@ export class CalendarConflictResolver {
   }
 
   /**
-   * Get conflict resolution statistics
+   * Get statistics about conflicts over the last 30 days
    */
-  async getConflictStats(days = 30): Promise<any> {
+  async getConflictStats(): Promise<{
+    totalConflicts: number;
+    autoResolved: number;
+    manualResolution: number;
+    byType: Record<string, number>;
+    bySeverity: Record<string, number>;
+    resolutionStrategies: Record<string, number>;
+  } | null> {
     try {
-      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-
       const logs = await db
         .select()
         .from(calendarSyncLogs)
-        .where(
-          and(
-            eq(calendarSyncLogs.operation, 'sync'),
-            eq(calendarSyncLogs.direction, 'bidirectional')
-          )
-        );
+        .where(eq(calendarSyncLogs.operation, 'sync'));
 
-      const conflictLogs = logs.filter(log => 
-        log.dataSnapshot && 
-        typeof log.dataSnapshot === 'object' &&
-        'conflict' in log.dataSnapshot
-      );
+      const conflictLogs = logs.filter(log => {
+        if (!log.dataSnapshot) return false;
+        try {
+          const snapshot = JSON.parse(log.dataSnapshot);
+          return snapshot && typeof snapshot === 'object' && 'conflict' in snapshot;
+        } catch {
+          return false;
+        }
+      });
+
+      const getDataSnapshot = (log: typeof logs[0]): Record<string, unknown> | null => {
+        if (!log.dataSnapshot) return null;
+        try {
+          return JSON.parse(log.dataSnapshot) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      };
 
       const stats = {
         totalConflicts: conflictLogs.length,
-        autoResolved: conflictLogs.filter(log => (log.dataSnapshot as any)?.result === 'auto').length,
-        manualResolution: conflictLogs.filter(log => (log.dataSnapshot as any)?.result === 'pending').length,
+        autoResolved: conflictLogs.filter(log => getDataSnapshot(log)?.result === 'auto').length,
+        manualResolution: conflictLogs.filter(log => getDataSnapshot(log)?.result === 'pending').length,
         byType: {
-          timing_conflict: conflictLogs.filter(log => (log.dataSnapshot as any)?.conflict?.type === 'timing_conflict').length,
-          data_mismatch: conflictLogs.filter(log => (log.dataSnapshot as any)?.conflict?.type === 'data_mismatch').length,
-          duplicate_event: conflictLogs.filter(log => (log.dataSnapshot as any)?.conflict?.type === 'duplicate_event').length,
-          deletion_conflict: conflictLogs.filter(log => (log.dataSnapshot as any)?.conflict?.type === 'deletion_conflict').length,
+          timing_conflict: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const conflict = snapshot?.conflict as Record<string, unknown> | undefined;
+            return conflict?.type === 'timing_conflict';
+          }).length,
+          data_mismatch: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const conflict = snapshot?.conflict as Record<string, unknown> | undefined;
+            return conflict?.type === 'data_mismatch';
+          }).length,
+          duplicate_event: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const conflict = snapshot?.conflict as Record<string, unknown> | undefined;
+            return conflict?.type === 'duplicate_event';
+          }).length,
+          deletion_conflict: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const conflict = snapshot?.conflict as Record<string, unknown> | undefined;
+            return conflict?.type === 'deletion_conflict';
+          }).length,
         },
         bySeverity: {
-          low: conflictLogs.filter(log => (log.dataSnapshot as any)?.conflict?.severity === 'low').length,
-          medium: conflictLogs.filter(log => (log.dataSnapshot as any)?.conflict?.severity === 'medium').length,
-          high: conflictLogs.filter(log => (log.dataSnapshot as any)?.conflict?.severity === 'high').length,
-          critical: conflictLogs.filter(log => (log.dataSnapshot as any)?.conflict?.severity === 'critical').length,
+          low: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const conflict = snapshot?.conflict as Record<string, unknown> | undefined;
+            return conflict?.severity === 'low';
+          }).length,
+          medium: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const conflict = snapshot?.conflict as Record<string, unknown> | undefined;
+            return conflict?.severity === 'medium';
+          }).length,
+          high: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const conflict = snapshot?.conflict as Record<string, unknown> | undefined;
+            return conflict?.severity === 'high';
+          }).length,
+          critical: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const conflict = snapshot?.conflict as Record<string, unknown> | undefined;
+            return conflict?.severity === 'critical';
+          }).length,
         },
         resolutionStrategies: {
-          crm_wins: conflictLogs.filter(log => (log.dataSnapshot as any)?.strategy?.strategy === 'crm_wins').length,
-          calendar_wins: conflictLogs.filter(log => (log.dataSnapshot as any)?.strategy?.strategy === 'calendar_wins').length,
-          newest_wins: conflictLogs.filter(log => (log.dataSnapshot as any)?.strategy?.strategy === 'newest_wins').length,
-          merge: conflictLogs.filter(log => (log.dataSnapshot as any)?.strategy?.strategy === 'merge').length,
-          manual_review: conflictLogs.filter(log => (log.dataSnapshot as any)?.strategy?.strategy === 'manual_review').length,
+          crm_wins: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const strategy = snapshot?.strategy as Record<string, unknown> | undefined;
+            return strategy?.strategy === 'crm_wins';
+          }).length,
+          calendar_wins: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const strategy = snapshot?.strategy as Record<string, unknown> | undefined;
+            return strategy?.strategy === 'calendar_wins';
+          }).length,
+          newest_wins: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const strategy = snapshot?.strategy as Record<string, unknown> | undefined;
+            return strategy?.strategy === 'newest_wins';
+          }).length,
+          merge: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const strategy = snapshot?.strategy as Record<string, unknown> | undefined;
+            return strategy?.strategy === 'merge';
+          }).length,
+          manual_review: conflictLogs.filter(log => {
+            const snapshot = getDataSnapshot(log);
+            const strategy = snapshot?.strategy as Record<string, unknown> | undefined;
+            return strategy?.strategy === 'manual_review';
+          }).length,
         },
       };
 

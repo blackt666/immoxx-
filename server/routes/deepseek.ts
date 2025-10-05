@@ -164,7 +164,11 @@ router.post('/generate-description', async (req: Request, res: Response) => {
  */
 router.post('/chat', async (req: Request, res: Response) => {
   try {
-    const validatedData = chatSchema.parse(req.body);
+    const validatedData = chatSchema.parse(req.body) as {
+      message: string;
+      context?: string;
+      conversationHistory?: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+    };
     const deepseek = getDeepSeekService();
 
     const response = await deepseek.chat(validatedData);
@@ -200,7 +204,12 @@ router.post('/chat', async (req: Request, res: Response) => {
  */
 router.post('/generate-email', async (req: Request, res: Response) => {
   try {
-    const validatedData = emailResponseSchema.parse(req.body);
+    const validatedData = emailResponseSchema.parse(req.body) as {
+      customerName: string;
+      subject: string;
+      message: string;
+      propertyReference?: string;
+    };
     const deepseek = getDeepSeekService();
 
     const emailResponse = await deepseek.generateEmailResponse(validatedData);
