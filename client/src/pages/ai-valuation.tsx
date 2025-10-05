@@ -5,9 +5,9 @@ import { Link } from "wouter";
 
 export default function AIValuationPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(210,70%,50%)]/5 via-white to-[hsl(185,60%,45%)]/5">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--bodensee-shore)]/5 via-white to-[var(--bodensee-sand)]/5">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[hsl(210,70%,50%)] to-[hsl(185,60%,45%)] text-white py-16 sm:py-20">
+      <div className="bg-gradient-to-r from-[var(--bodensee-deep)] to-[var(--bodensee-water)] text-white py-16 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
             <Link href="/">

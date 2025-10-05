@@ -217,7 +217,7 @@ export default function HeroSection() {
               data-testid="button-hero-calculator"
             >
               <Calculator className="mr-2 w-5 h-5 text-green-400" />
-              📊 Finanzrechner
+              {t('nav.calculator')}
             </Button>
 
             {/* Human Contact - Tertiary */}
@@ -229,7 +229,7 @@ export default function HeroSection() {
               data-testid="button-hero-contact"
             >
               <Phone className="mr-2 w-4 h-4" />
-              👤 {t('hero.call')}
+              {t('hero.call')}
             </Button>
           </div>
 

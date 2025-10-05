@@ -133,6 +133,10 @@ export class RateLimitingService {
     const maxAttemptsLong = 10; // Max 10 attempts per hour
 
     try {
+      // TEMPORARILY DISABLED: Database rate limiting has schema issues
+      // Falling back to in-memory only for now
+      throw new Error('Database rate limiting temporarily disabled - using in-memory fallback');
+
       // TRY DATABASE FIRST
       return await db.transaction(async (tx) => {
         const currentTime = new Date(now);
@@ -143,35 +147,35 @@ export class RateLimitingService {
         const [result] = await tx
           .insert(rateLimitEntries)
           .values({
-            clientId,
-            limitType: 'login',
+            identifier: clientId,
+            endpoint: 'login',
             count: 1,
             resetTime: resetTimeShort,
             firstAttemptTime: currentTime,
             blocked: false,
           })
           .onConflictDoUpdate({
-            target: [rateLimitEntries.clientId, rateLimitEntries.limitType], // Uses the unique constraint
+            target: [rateLimitEntries.identifier, rateLimitEntries.endpoint], // Uses the unique constraint
             set: {
               // ATOMIC INCREMENT with window reset logic in single query
               count: sql`CASE 
                 WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN 1 
                 ELSE ${rateLimitEntries.count} + 1 
               END`,
-              resetTime: sql`CASE 
+              resetTime: sql`CASE
                 WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN ${resetTimeShort}
-                WHEN ${rateLimitEntries.count} + 1 > ${maxAttemptsShort} AND 
-                     ${currentTime} - COALESCE(${rateLimitEntries.firstAttemptTime}, ${rateLimitEntries.createdAt}) < INTERVAL '1 hour' THEN ${resetTimeLong}
+                WHEN ${rateLimitEntries.count} + 1 > ${maxAttemptsShort} AND
+                     (strftime('%s', ${currentTime}) * 1000 - strftime('%s', COALESCE(${rateLimitEntries.firstAttemptTime}, ${rateLimitEntries.createdAt})) * 1000) < 3600000 THEN ${resetTimeLong}
                 ELSE ${rateLimitEntries.resetTime}
               END`,
-              firstAttemptTime: sql`CASE 
+              firstAttemptTime: sql`CASE
                 WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN ${currentTime}
                 ELSE COALESCE(${rateLimitEntries.firstAttemptTime}, ${rateLimitEntries.createdAt})
               END`,
-              blocked: sql`CASE 
+              blocked: sql`CASE
                 WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN false
-                WHEN ${rateLimitEntries.count} + 1 > ${maxAttemptsLong} AND 
-                     ${currentTime} - COALESCE(${rateLimitEntries.firstAttemptTime}, ${rateLimitEntries.createdAt}) < INTERVAL '1 hour' THEN true
+                WHEN ${rateLimitEntries.count} + 1 > ${maxAttemptsLong} AND
+                     (strftime('%s', ${currentTime}) * 1000 - strftime('%s', COALESCE(${rateLimitEntries.firstAttemptTime}, ${rateLimitEntries.createdAt})) * 1000) < 3600000 THEN true
                 ELSE ${rateLimitEntries.blocked}
               END`,
               updatedAt: currentTime,
@@ -290,15 +294,15 @@ export class RateLimitingService {
         const [result] = await tx
           .insert(rateLimitEntries)
           .values({
-            clientId,
-            limitType: 'admin',
+            identifier: clientId,
+            endpoint: 'admin',
             count: 1,
             resetTime: resetTime,
             firstAttemptTime: currentTime,
             blocked: false,
           })
           .onConflictDoUpdate({
-            target: [rateLimitEntries.clientId, rateLimitEntries.limitType], // Uses the unique constraint
+            target: [rateLimitEntries.identifier, rateLimitEntries.endpoint], // Uses the unique constraint
             set: {
               // ATOMIC INCREMENT with window reset logic in single query
               count: sql`CASE 

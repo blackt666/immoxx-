@@ -30,7 +30,7 @@ export default function Navigation() {
 
   const aiServiceItems = [
     {
-      name: t('nav.ai.valuation', '🤖 AI-Bewertung'),
+      name: t('nav.ai.valuation', 'AI-Bewertung'),
       href: "/ai-valuation",
       external: true,
       isAI: true,
@@ -41,14 +41,14 @@ export default function Navigation() {
 
   const humanServiceItems = [
     {
-      name: t('nav.human.consultation', '👤 Beratungstermin'),
+      name: t('nav.human.consultation', 'Beratungstermin'),
       href: "#contact",
       isHuman: true,
       icon: User,
       description: t('nav.human.subtitle', 'Individuelle Beratung • Terminvereinbarung')
     },
     {
-      name: t('nav.human.contact', '📞 Kontakt'),
+      name: t('nav.human.contact', 'Kontakt'),
       href: "#contact",
       isHuman: true,
       icon: Phone,
@@ -129,7 +129,7 @@ export default function Navigation() {
                     >
                       <div className="flex items-center space-x-1 lg:space-x-2">
                         <Icon className="w-4 h-4" />
-                        <span className="text-sm hidden lg:inline">{item.name.replace(/[🤖📊]/g, '').trim()}</span>
+                        <span className="text-sm hidden lg:inline">{item.name}</span>
                         <span className="text-xs lg:hidden">AI</span>
                         <Zap className="w-3 h-3 text-yellow-300 opacity-80" />
                       </div>
@@ -156,7 +156,7 @@ export default function Navigation() {
                       data-testid={`button-human-${item.href.replace('#', '')}`}
                     >
                       <Icon className="w-4 h-4" />
-                      <span className="hidden lg:inline">{item.name.replace(/[👤📞]/g, '').trim()}</span>
+                      <span className="hidden lg:inline">{item.name}</span>
                       <span className="lg:hidden">Kontakt</span>
                       {/* Tooltip */}
                       <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
@@ -256,7 +256,7 @@ export default function Navigation() {
                   >
                     <Icon className="w-5 h-5" />
                     <div>
-                      <span className="font-semibold">{item.name.replace(/[🤖📊]/g, '').trim()}</span>
+                      <span className="font-semibold">{item.name}</span>
                       <div className="flex items-center space-x-1 mt-1">
                         <Zap className="w-3 h-3 text-yellow-300 opacity-80" />
                         <span className="text-xs text-white/90">Sofort verfügbar</span>
@@ -287,7 +287,7 @@ export default function Navigation() {
                   >
                     <Icon className="w-5 h-5 text-gray-600" />
                     <div>
-                      <span className="font-medium text-gray-700">{item.name.replace(/[👤📞]/g, '').trim()}</span>
+                      <span className="font-medium text-gray-700">{item.name}</span>
                       <div className="flex items-center space-x-1 mt-1">
                         <Calendar className="w-3 h-3 text-gray-500" />
                         <span className="text-xs text-gray-500">Terminvereinbarung</span>

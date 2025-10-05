@@ -8,6 +8,22 @@ import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import {
   AlertCircle,
+  Inbox,
+  Phone,
+  CheckCircle,
+  Home,
+  DollarSign,
+  Handshake,
+  Trophy,
+  XCircle,
+  Flame,
+  Sun,
+  Snowflake,
+  Mail,
+  Calendar,
+  Users,
+  TrendingUp,
+  Download,
 } from 'lucide-react';
 import { LeadDetailModal } from '../components/crm/LeadDetailModal';
 import { NewLeadModal } from '../components/crm/NewLeadModal';
@@ -44,14 +60,14 @@ interface LeadsResponse {
 
 // Pipeline stages configuration with Bodensee colors
 const PIPELINE_STAGES = [
-  { id: 'inbox', label: 'Posteingang', colorStyle: { backgroundColor: 'var(--bodensee-shore)', color: 'var(--bodensee-deep)' }, icon: '📥' },
-  { id: 'contacted', label: 'Kontaktiert', colorStyle: { backgroundColor: 'var(--bodensee-sand)', color: 'var(--bodensee-deep)' }, icon: '📞' },
-  { id: 'qualified', label: 'Qualifiziert', colorStyle: { backgroundColor: '#d4edda', color: '#155724' }, icon: '✓' },
-  { id: 'viewing_scheduled', label: 'Besichtigung', colorStyle: { backgroundColor: 'var(--bodensee-water)', color: 'white', opacity: 0.7 }, icon: '🏠' },
-  { id: 'offer_made', label: 'Angebot', colorStyle: { backgroundColor: '#fff3cd', color: '#856404' }, icon: '💰' },
-  { id: 'negotiation', label: 'Verhandlung', colorStyle: { backgroundColor: '#ffeaa7', color: '#856404' }, icon: '🤝' },
-  { id: 'won', label: 'Gewonnen', colorStyle: { backgroundColor: '#c3e6cb', color: '#155724' }, icon: '🎉' },
-  { id: 'lost', label: 'Verloren', colorStyle: { backgroundColor: '#f5c6cb', color: '#721c24' }, icon: '❌' },
+  { id: 'inbox', label: 'Posteingang', colorStyle: { backgroundColor: 'var(--bodensee-shore)', color: 'var(--bodensee-deep)' }, IconComponent: Inbox },
+  { id: 'contacted', label: 'Kontaktiert', colorStyle: { backgroundColor: 'var(--bodensee-sand)', color: 'var(--bodensee-deep)' }, IconComponent: Phone },
+  { id: 'qualified', label: 'Qualifiziert', colorStyle: { backgroundColor: '#d4edda', color: '#155724' }, IconComponent: CheckCircle },
+  { id: 'viewing_scheduled', label: 'Besichtigung', colorStyle: { backgroundColor: 'var(--bodensee-water)', color: 'white', opacity: 0.7 }, IconComponent: Home },
+  { id: 'offer_made', label: 'Angebot', colorStyle: { backgroundColor: '#fff3cd', color: '#856404' }, IconComponent: DollarSign },
+  { id: 'negotiation', label: 'Verhandlung', colorStyle: { backgroundColor: '#ffeaa7', color: '#856404' }, IconComponent: Handshake },
+  { id: 'won', label: 'Gewonnen', colorStyle: { backgroundColor: '#c3e6cb', color: '#155724' }, IconComponent: Trophy },
+  { id: 'lost', label: 'Verloren', colorStyle: { backgroundColor: '#f5c6cb', color: '#721c24' }, IconComponent: XCircle },
 ];
 
 export default function CRMDashboard() {
@@ -223,14 +239,15 @@ export default function CRMDashboard() {
       warm: 'bg-orange-500 text-white',
       cold: 'bg-blue-500 text-white',
     };
-    const icons = {
-      hot: '🔥',
-      warm: '☀️',
-      cold: '❄️',
+    const IconComponents = {
+      hot: Flame,
+      warm: Sun,
+      cold: Snowflake,
     };
+    const IconComponent = IconComponents[temperature as keyof typeof IconComponents];
     return (
       <Badge className={colors[temperature as keyof typeof colors]}>
-        {icons[temperature as keyof typeof icons]} {temperature.toUpperCase()}
+        <IconComponent className="w-3 h-3 mr-1 inline" /> {temperature.toUpperCase()}
       </Badge>
     );
   };
@@ -271,7 +288,7 @@ export default function CRMDashboard() {
       <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
         {lead.phone && (
           <div className="flex items-center gap-1">
-            <span>📞</span>
+            <Phone className="w-3 h-3" />
             <span>{lead.phone}</span>
           </div>
         )}
@@ -301,13 +318,13 @@ export default function CRMDashboard() {
         </div>
         <div className="flex gap-1">
           <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => e.stopPropagation()}>
-            <span>📞</span>
+            <Phone className="w-3 h-3" />
           </Button>
           <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => e.stopPropagation()}>
-            <span>✉️</span>
+            <Mail className="w-3 h-3" />
           </Button>
           <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => e.stopPropagation()}>
-            <span>📅</span>
+            <Calendar className="w-3 h-3" />
           </Button>
         </div>
       </div>
@@ -322,6 +339,8 @@ export default function CRMDashboard() {
       id: stage.id,
     });
 
+    const StageIcon = stage.IconComponent;
+
     return (
       <div
         ref={setNodeRef}
@@ -330,7 +349,7 @@ export default function CRMDashboard() {
         <div className="rounded-t-lg p-3 mb-2" style={stage.colorStyle}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xl">{stage.icon}</span>
+              <StageIcon className="w-5 h-5" />
               <h3 className="font-semibold">{stage.label}</h3>
             </div>
             <Badge variant="secondary">
@@ -394,8 +413,9 @@ export default function CRMDashboard() {
             <h1 className="text-2xl font-bold" style={{ color: 'var(--bodensee-deep)' }}>CRM Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/admin" className="text-sm px-3 py-2 rounded-lg font-semibold" style={{ backgroundColor: 'var(--bodensee-sand)', color: 'var(--bodensee-deep)' }}>
-              📊 Admin Bereich
+            <a href="/admin" className="text-sm px-3 py-2 rounded-lg font-semibold flex items-center gap-2" style={{ backgroundColor: 'var(--bodensee-sand)', color: 'var(--bodensee-deep)' }}>
+              <TrendingUp className="w-4 h-4" />
+              Admin Bereich
             </a>
           </div>
         </div>
@@ -415,37 +435,37 @@ export default function CRMDashboard() {
               <p className="text-sm text-gray-500">Gesamt Leads</p>
               <p className="text-2xl font-bold" style={{ color: 'var(--bodensee-deep)' }}>{stats.total}</p>
             </div>
-            <span style={{ fontSize: '32px' }}>👥</span>
+            <Users className="w-8 h-8 text-gray-400" />
           </div>
         </Card>
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Hot Leads 🔥</p>
+              <p className="text-sm text-gray-500 flex items-center gap-1">Hot Leads <Flame className="w-4 h-4 text-red-500" /></p>
               <p className="text-2xl font-bold text-red-500">{stats.hot}</p>
             </div>
-            <span style={{ fontSize: '32px' }}>📈</span>
+            <TrendingUp className="w-8 h-8 text-red-400" />
           </div>
         </Card>
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Warm Leads ☀️</p>
+              <p className="text-sm text-gray-500 flex items-center gap-1">Warm Leads <Sun className="w-4 h-4 text-orange-500" /></p>
               <p className="text-2xl font-bold text-orange-500">{stats.warm}</p>
             </div>
-            <span style={{ fontSize: '32px' }}>📊</span>
+            <TrendingUp className="w-8 h-8 text-orange-400" />
           </div>
         </Card>
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Cold Leads ❄️</p>
+              <p className="text-sm text-gray-500 flex items-center gap-1">Cold Leads <Snowflake className="w-4 h-4" style={{ color: 'var(--bodensee-water)' }} /></p>
               <p className="text-2xl font-bold" style={{ color: 'var(--bodensee-water)' }}>{stats.cold}</p>
             </div>
-            <span style={{ fontSize: '32px' }}>📉</span>
+            <TrendingUp className="w-8 h-8" style={{ color: 'var(--bodensee-water)', opacity: 0.6 }} />
           </div>
         </Card>
       </div>
@@ -454,7 +474,7 @@ export default function CRMDashboard() {
       <div className="mb-4">
         <Input
           type="search"
-          placeholder="🔍 Lead suchen (Name, E-Mail, Telefon)..."
+          placeholder="Lead suchen (Name, E-Mail, Telefon)..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
@@ -475,36 +495,40 @@ export default function CRMDashboard() {
             variant={selectedFilter === 'hot' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedFilter('hot')}
+            className="flex items-center gap-1"
           >
-            🔥 Hot
+            <Flame className="w-3 h-3" /> Hot
           </Button>
           <Button
             variant={selectedFilter === 'warm' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedFilter('warm')}
+            className="flex items-center gap-1"
           >
-            ☀️ Warm
+            <Sun className="w-3 h-3" /> Warm
           </Button>
           <Button
             variant={selectedFilter === 'cold' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedFilter('cold')}
+            className="flex items-center gap-1"
           >
-            ❄️ Cold
+            <Snowflake className="w-3 h-3" /> Cold
           </Button>
         </div>
 
         <div className="flex gap-2">
-          <Button size="sm" variant="outline">
-            <span className="mr-2">⬇️</span>
+          <Button size="sm" variant="outline" className="flex items-center gap-2">
+            <Download className="w-4 h-4" />
             Export
           </Button>
           <Button
             size="sm"
             style={{ backgroundColor: 'var(--bodensee-water)', color: 'white' }}
             onClick={() => setShowNewLead(true)}
+            className="flex items-center gap-2"
           >
-            <span className="mr-2">➕</span>
+            <span className="text-lg">+</span>
             Neuer Lead
           </Button>
         </div>
@@ -542,7 +566,7 @@ export default function CRMDashboard() {
       {/* Calendar Integration Info */}
       <Card className="mt-6 p-4">
         <div className="flex items-start gap-3">
-          <span style={{ fontSize: '32px' }}>📅</span>
+          <Calendar className="w-8 h-8" style={{ color: 'var(--bodensee-water)' }} />
           <div>
             <h3 className="font-semibold mb-1" style={{ color: 'var(--bodensee-deep)' }}>Apple Kalender Integration</h3>
             <p className="text-sm text-gray-600 mb-2">

@@ -58,15 +58,15 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(135deg, #F8F9FA 0%, #E8F4F8 50%, #F8F9FA 100%)'}}>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[var(--bodensee-shore)] via-[var(--bodensee-sand)] to-[var(--bodensee-shore)]">
       <div className="max-w-md w-full space-y-8">
-        <div className="bg-white rounded-2xl shadow-2xl p-8" style={{border: '1px solid rgba(217, 205, 191, 0.3)'}}>
+        <div className="bg-white rounded-2xl shadow-2xl p-8 border" style={{borderColor: 'var(--bodensee-sand)'}}>
           <div className="text-center mb-8">
-            <div className="mx-auto h-16 w-16 rounded-xl flex items-center justify-center mb-4" style={{background: 'linear-gradient(135deg, #566B73 0%, #65858C 100%)'}}>
+            <div className="mx-auto h-16 w-16 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br from-[var(--bodensee-deep)] to-[var(--bodensee-water)]">
               <Shield className="h-8 w-8 text-white" />
             </div>
-            <h2 className="text-3xl font-bold" style={{color: '#566B73'}}>Admin Login</h2>
-            <p className="mt-2 text-sm" style={{color: '#8C837B'}}>
+            <h2 className="text-3xl font-bold" style={{color: 'var(--bodensee-deep)'}}>Admin Login</h2>
+            <p className="mt-2 text-sm" style={{color: 'var(--bodensee-stone)'}}>
               Bodensee Immobilien Verwaltung
             </p>
           </div>
@@ -107,7 +107,7 @@ export default function AdminLogin() {
                       password: e.target.value,
                     }))
                   }
-                  className="h-12 pr-12 border-gray-300 focus:border-[var(--arctic-blue)] focus:ring-[var(--arctic-blue)]"
+                  className="h-12 pr-12 border-gray-300 focus:border-[var(--bodensee-water)] focus:ring-[var(--bodensee-water)]"
                 />
                 <Button
                   type="button"
@@ -129,9 +129,8 @@ export default function AdminLogin() {
             <Button
               type="submit"
               disabled={loginMutation.isPending}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 bg-gradient-to-br from-[var(--bodensee-deep)] to-[var(--bodensee-water)]"
               style={{
-                background: 'linear-gradient(135deg, #566B73 0%, #65858C 100%)',
                 boxShadow: '0 4px 6px rgba(86, 107, 115, 0.3)'
               }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}

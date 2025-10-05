@@ -396,8 +396,7 @@ const ensureAdminUser = async (username: string, password: string): Promise<void
     await db.insert(schema.users).values({
       username,
       password: hashedPassword,
-      role: 'admin',
-      name: 'Administrator'
+      role: 'admin'
     });
     
     logSecurityEvent('admin_user_created', { username });

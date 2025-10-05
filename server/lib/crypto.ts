@@ -1,8 +1,10 @@
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 
 /**
  * SECURITY-HARDENED crypto utilities for Bodensee Immobilien
  * Production-ready implementation with OWASP security standards
+ * Supports both bcrypt and PBKDF2 password hashing
  */
 
 /**
@@ -83,14 +85,24 @@ export function hashPassword(password: string): string {
 
 /**
  * Verify password against hash with automatic migration support
- * SECURITY: Supports both old (weak) and new (strong) hash formats
- * Old format: salt:hash (1000 iterations - INSECURE)
- * New format: iterations:salt:hash (210,000+ iterations - SECURE)
+ * SECURITY: Supports bcrypt, PBKDF2, and legacy hash formats
+ * - bcrypt format: $2a$, $2b$, $2y$ prefixes (SECURE - automatically migrated to PBKDF2)
+ * - PBKDF2 legacy: salt:hash (1000 iterations - WEAK)
+ * - PBKDF2 new: iterations:salt:hash (210,000+ iterations - SECURE)
  */
 export function verifyPassword(password: string, hashedPassword: string): boolean {
   try {
+    // Check if this is a bcrypt hash (starts with $2a$, $2b$, or $2y$)
+    if (hashedPassword.startsWith('$2a$') || hashedPassword.startsWith('$2b$') || hashedPassword.startsWith('$2y$')) {
+      console.log('🔐 SECURITY: Verifying bcrypt password hash (will be migrated to PBKDF2 on next login)');
+      // Use bcryptjs compareSync for bcrypt hashes
+      const isValid = bcrypt.compareSync(password, hashedPassword);
+      return isValid;
+    }
+
+    // Otherwise, use PBKDF2 verification
     const parts = hashedPassword.split(':');
-    
+
     if (parts.length === 2) {
       // Legacy format: salt:hash (1000 iterations - WEAK)
       console.warn('⚠️ SECURITY: Using legacy weak password hash format. User should be migrated to strong hash on next login.');
@@ -101,21 +113,21 @@ export function verifyPassword(password: string, hashedPassword: string): boolea
       // New format: iterations:salt:hash (configurable iterations - SECURE)
       const [iterationsStr, salt, hash] = parts;
       const iterations = parseInt(iterationsStr, 10);
-      
+
       if (isNaN(iterations) || iterations < 1000) {
         console.error('🚨 SECURITY: Invalid iterations in password hash');
         return false;
       }
-      
+
       // Warn if hash uses weak iterations
       if (iterations < 210000) {
         console.warn(`⚠️ SECURITY: Password hash uses weak iterations (${iterations}). User should be migrated to strong hash.`);
       }
-      
+
       const hashVerify = crypto.pbkdf2Sync(password, salt, iterations, 64, 'sha512').toString('hex');
       return safeTimeComparison(hash, hashVerify);
     }
-    
+
     console.error('🚨 SECURITY: Invalid password hash format');
     return false;
   } catch (error) {
@@ -130,23 +142,28 @@ export function verifyPassword(password: string, hashedPassword: string): boolea
  */
 export function isWeakPasswordHash(hashedPassword: string): boolean {
   try {
+    // bcrypt hashes should be migrated to PBKDF2
+    if (hashedPassword.startsWith('$2a$') || hashedPassword.startsWith('$2b$') || hashedPassword.startsWith('$2y$')) {
+      return true; // bcrypt is considered weak for migration purposes
+    }
+
     const parts = hashedPassword.split(':');
-    
+
     if (parts.length === 2) {
       // Legacy format with 1000 iterations - WEAK
       return true;
     } else if (parts.length === 3) {
       const [iterationsStr] = parts;
       const iterations = parseInt(iterationsStr, 10);
-      
+
       if (isNaN(iterations)) {
         return true; // Invalid format is considered weak
       }
-      
+
       // Consider weak if below OWASP minimum
       return iterations < 210000;
     }
-    
+
     return true; // Unknown format is considered weak
   } catch (error) {
     console.error('🚨 SECURITY: Error checking password hash strength:', (error as Error).message);

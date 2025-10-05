@@ -717,7 +717,7 @@ class Storage {
 
   async updateUser(id: string, data: any) {
     const [user] = await db.update(schema.users)
-      .set({ ...data, updatedAt: new Date() })
+      .set(data)
       .where(eq(schema.users.id, id))
       .returning();
 
