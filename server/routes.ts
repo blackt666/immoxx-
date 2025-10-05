@@ -351,7 +351,7 @@ const ensureAdminUser = async (username: string, password: string): Promise<void
         // Migrate plaintext password to hashed password
         console.log('🔒 SECURITY: Migrating admin user to hashed password...');
         const hashedPassword = hashPassword(password);
-        await storage.updateUser(String(existingUser.id), { password: hashedPassword });
+        await storage.updateUser(existingUser.id, { password: hashedPassword });
         logSecurityEvent('password_migration_completed', { 
           userId: existingUser.id, 
           username: existingUser.username 
@@ -451,7 +451,7 @@ const authenticateAdmin = async (username: string, password: string, clientId: s
         
         try {
           const newStrongHash = hashPassword(password);
-          await storage.updateUser(String(user.id), { password: newStrongHash });
+          await storage.updateUser(user.id, { password: newStrongHash });
           
           logSecurityEvent('auth_password_migrated', { 
             username: user.username, 
@@ -827,7 +827,7 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/properties/:id", async (req, res) => {
     try {
-      const property = await storage.getProperty(req.params.id);
+      const property = await storage.getProperty(parseInt(req.params.id));
       if (!property) {
         return res.status(404).json({ message: "Property not found" });
       }
@@ -851,12 +851,12 @@ export async function registerRoutes(app: Express) {
   app.put("/api/properties/:id", requireAuth, async (req, res) => {
     try {
       // Check if property exists first
-      const existingProperty = await storage.getProperty(req.params.id);
+      const existingProperty = await storage.getProperty(parseInt(req.params.id));
       if (!existingProperty) {
         return res.status(404).json({ message: "Property not found" });
       }
 
-      const property = await storage.updateProperty(req.params.id, req.body);
+      const property = await storage.updateProperty(parseInt(req.params.id), req.body);
       res.json(property);
     } catch (e) {
       console.error("❌ Update property error:", e);
@@ -870,12 +870,12 @@ export async function registerRoutes(app: Express) {
   app.delete("/api/properties/:id", requireAuth, async (req, res) => {
     try {
       // Check if property exists first
-      const existingProperty = await storage.getProperty(req.params.id);
+      const existingProperty = await storage.getProperty(parseInt(req.params.id));
       if (!existingProperty) {
         return res.status(404).json({ message: "Property not found" });
       }
 
-      await storage.deleteProperty(req.params.id);
+      await storage.deleteProperty(parseInt(req.params.id));
       res.json({ message: "Property deleted successfully" });
     } catch (e) {
       console.error("❌ Delete property error:", e);
@@ -1062,7 +1062,7 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/gallery/:id/image", async (req, res) => {
     try {
-      const image = await storage.getGalleryImage(req.params.id);
+      const image = await storage.getGalleryImage(parseInt(req.params.id));
       if (!image) {
         return res.status(404).json({ message: "Image not found" });
       }
@@ -1093,7 +1093,7 @@ export async function registerRoutes(app: Express) {
   // GET specific gallery image metadata
   app.get("/api/gallery/:id", async (req, res) => {
     try {
-      const image = await storage.getGalleryImage(req.params.id);
+      const image = await storage.getGalleryImage(parseInt(req.params.id));
       if (!image) {
         return res.status(404).json({ message: "Image not found" });
       }
@@ -1117,7 +1117,7 @@ export async function registerRoutes(app: Express) {
       }
 
       // Check if image exists
-      const existingImage = await storage.getGalleryImage(req.params.id);
+      const existingImage = await storage.getGalleryImage(Number(req.params.id));
       if (!existingImage) {
         return res.status(404).json({ message: "Image not found" });
       }
@@ -1127,7 +1127,7 @@ export async function registerRoutes(app: Express) {
         ...validationResult.data,
         propertyId: validationResult.data.propertyId === null ? undefined : validationResult.data.propertyId
       };
-      const updatedImage = await storage.updateGalleryImage(req.params.id, updateData);
+      const updatedImage = await storage.updateGalleryImage(Number(req.params.id), updateData);
       
       console.log("✅ Image metadata updated:", req.params.id);
       res.json({ 
@@ -1153,7 +1153,7 @@ export async function registerRoutes(app: Express) {
       }
 
       // Check if image exists
-      const existingImage = await storage.getGalleryImage(req.params.id);
+      const existingImage = await storage.getGalleryImage(parseInt(req.params.id));
       if (!existingImage) {
         return res.status(404).json({ message: "Image not found" });
       }
@@ -1168,7 +1168,7 @@ export async function registerRoutes(app: Express) {
       }
 
       // Update image metadata
-      const updatedImage = await storage.updateGalleryImage(req.params.id, updateData);
+      const updatedImage = await storage.updateGalleryImage(parseInt(req.params.id), updateData);
       
       console.log("✅ Image metadata partially updated:", req.params.id);
       res.json({ 
@@ -1184,7 +1184,7 @@ export async function registerRoutes(app: Express) {
   app.delete("/api/gallery/:id", requireAuth, async (req, res) => {
     try {
       // Check if image exists first
-      const image = await storage.getGalleryImage(req.params.id);
+      const image = await storage.getGalleryImage(parseInt(req.params.id));
       if (!image) {
         return res.status(404).json({ message: "Image not found" });
       }
@@ -1204,7 +1204,7 @@ export async function registerRoutes(app: Express) {
       }
 
       // Delete from database
-      await storage.deleteGalleryImage(req.params.id);
+      await storage.deleteGalleryImage(parseInt(req.params.id));
       
       console.log(`✅ Image deleted successfully: ${req.params.id}`);
       res.json({ message: "Image deleted successfully" });
@@ -1230,7 +1230,7 @@ export async function registerRoutes(app: Express) {
       }
 
       // Check if image exists
-      const existingImage = await storage.getGalleryImage(req.params.id);
+      const existingImage = await storage.getGalleryImage(parseInt(req.params.id));
       if (!existingImage) {
         return res.status(404).json({ message: "Image not found" });
       }
@@ -1240,7 +1240,7 @@ export async function registerRoutes(app: Express) {
         ...validationResult.data,
         propertyId: validationResult.data.propertyId === null ? undefined : validationResult.data.propertyId
       };
-      const updatedImage = await storage.updateGalleryImage(req.params.id, updateData);
+      const updatedImage = await storage.updateGalleryImage(parseInt(req.params.id), updateData);
       
       console.log("✅ Image metadata updated via /update-metadata:", req.params.id);
       res.json({ 

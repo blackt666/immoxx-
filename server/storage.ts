@@ -1,15 +1,11 @@
 import { db, pool } from "./db.js";
 import * as schema from "@shared/schema";
 import type {
-  DesignSettings,
   InsertProperty,
-  InsertInquiry,
-  InsertCustomer,
-  InsertGalleryImage,
   Inquiry,
   GalleryImage
 } from "@shared/schema";
-import { eq, desc, and, sql, like } from "drizzle-orm";
+import { eq, desc, and, or, sql, like } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 import { PerformanceMonitor } from "./lib/performance-monitor.js";
@@ -216,13 +212,13 @@ class Storage {
     }
   }
 
-  async batchInsertInquiries(inquiries: Partial<Inquiry>[]): Promise<{ success: number; failed: number; errors: any[] }> {
+  async batchInsertInquiries(inquiries: Partial<Inquiry>[]): Promise<{ success: number; failed: number; errors: unknown[] }> {
     if (inquiries.length === 0) return { success: 0, failed: 0, errors: [] };
     
     const batchSize = 100;
     let success = 0;
     let failed = 0;
-    const errors: any[] = [];
+    const errors: unknown[] = [];
 
     try {
       for (let i = 0; i < inquiries.length; i += batchSize) {
@@ -264,13 +260,13 @@ class Storage {
     }
   }
 
-  async batchInsertCustomers(customers: any[]): Promise<{ success: number; failed: number; errors: any[] }> {
+  async batchInsertCustomers(customers: Record<string, unknown>[]): Promise<{ success: number; failed: number; errors: unknown[] }> {
     if (customers.length === 0) return { success: 0, failed: 0, errors: [] };
     
     const batchSize = 100;
     let success = 0;
     let failed = 0;
-    const errors: any[] = [];
+    const errors: unknown[] = [];
 
     try {
       for (let i = 0; i < customers.length; i += batchSize) {
@@ -280,23 +276,23 @@ class Storage {
           await PerformanceMonitor.timeDbOperation('batchInsertCustomers', async () => {
             await db.transaction(async (tx) => {
               const insertData = batch.map(customer => ({
-                firstName: customer.firstName || customer.name?.split(' ')[0] || '',
-                lastName: customer.lastName || customer.name?.split(' ').slice(1).join(' ') || '',
-                email: customer.email,
-                phone: customer.phone,
-                customerType: customer.type || 'prospect',
-                source: customer.source,
-                maxBudget: customer.budgetMax || customer.maxBudget,
-                minBudget: customer.budgetMin || customer.minBudget,
+                firstName: (customer.firstName || (customer.name as string)?.split(' ')[0] || '') as string,
+                lastName: (customer.lastName || (customer.name as string)?.split(' ').slice(1).join(' ') || '') as string,
+                email: customer.email as string,
+                phone: customer.phone as string | null,
+                customerType: ((customer.type || 'prospect') as string),
+                source: customer.source as string | null,
+                maxBudget: (customer.budgetMax || customer.maxBudget) as number | null,
+                minBudget: (customer.budgetMin || customer.minBudget) as number | null,
                 preferredLocations: JSON.stringify(customer.preferredLocations || []),
                 propertyTypes: JSON.stringify(customer.propertyTypes || []),
-                address: customer.address,
-                occupation: customer.occupation,
-                notes: customer.notes,
+                address: customer.address as string | null,
+                occupation: customer.occupation as string | null,
+                notes: customer.notes as string | null,
                 tags: JSON.stringify(customer.tags || [])
               }));
 
-              await tx.insert(schema.customers).values(insertData);
+              await tx.insert(schema.customers).values(insertData as typeof schema.customers.$inferInsert[]);
               success += batch.length;
             });
           });
@@ -353,7 +349,7 @@ class Storage {
     
     try {
       const result = await PerformanceMonitor.timeDbOperation('getAllProperties', async () => {
-        const { limit = 100, offset = 0, status = 'available', includeDeleted = false } = options;
+        const { limit = 100, status = 'available', includeDeleted = false } = options;
         
         const whereConditions = [];
         if (!includeDeleted) {
@@ -415,7 +411,7 @@ class Storage {
   } = {}) {
     // Check cache first
     const cacheKey = `properties_filtered_${JSON.stringify(filters)}`;
-    const cached = this.getFromCache<any>(cacheKey);
+    const cached = this.getFromCache<unknown>(cacheKey);
     if (cached) {
       return cached;
     }
@@ -444,6 +440,7 @@ class Storage {
         }
 
         if (conditions.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           query = query.where(and(...conditions)) as any;
         }
 
@@ -558,23 +555,28 @@ class Storage {
     search?: string;
   } = {}): Promise<{ images: GalleryImage[]; total: number; hasMore: boolean }> {
     try {
-      const { limit = 100, offset = 0, category, propertyId, search } = options;
-      
-      const whereConditions = [];
+      const { limit = 20, category, propertyId, search } = options;
 
+      const whereConditions: ReturnType<typeof sql>[] = [];
       if (category) {
         whereConditions.push(eq(schema.galleryImages.category, category));
       }
       if (propertyId) {
-        whereConditions.push(eq(schema.galleryImages.propertyId, propertyId));
+        const propertyIdNum = parseInt(propertyId);
+        if (!isNaN(propertyIdNum)) {
+          whereConditions.push(eq(schema.galleryImages.propertyId, propertyIdNum));
+        }
       }
       if (search) {
         const searchTerm = `%${search}%`;
-        whereConditions.push(
-          sql`${schema.galleryImages.filename} ILIKE ${searchTerm} OR 
-              ${schema.galleryImages.originalName} ILIKE ${searchTerm} OR
-              ${schema.galleryImages.alt} ILIKE ${searchTerm}`
+        const searchCondition = or(
+          like(schema.galleryImages.filename, searchTerm),
+          like(schema.galleryImages.originalName, searchTerm),
+          like(schema.galleryImages.alt, searchTerm)
         );
+        if (searchCondition) {
+          whereConditions.push(searchCondition);
+        }
       }
 
       const whereClause = whereConditions.length > 0 
@@ -624,7 +626,7 @@ class Storage {
     size: number;
     category?: string;
     alt?: string;
-    propertyId?: string;
+    propertyId?: number | string;
   }): Promise<GalleryImage> {
     const [image] = await db.insert(schema.galleryImages)
       .values({
@@ -633,7 +635,7 @@ class Storage {
         url: `/uploads/${data.filename}`,
         alt: data.alt || data.originalName,
         category: data.category || 'general',
-        propertyId: data.propertyId || null,
+        propertyId: data.propertyId ? Number(data.propertyId) : null,
         size: data.size
       })
       .returning();
@@ -644,13 +646,13 @@ class Storage {
   async updateGalleryImage(id: number, data: {
     alt?: string;
     category?: string;
-    propertyId?: string;
+    propertyId?: number | string;
   }): Promise<GalleryImage> {
     const [updatedImage] = await db.update(schema.galleryImages)
       .set({
         alt: data.alt,
         category: data.category,
-        propertyId: data.propertyId
+        propertyId: data.propertyId ? Number(data.propertyId) : undefined
       })
       .where(eq(schema.galleryImages.id, id))
       .returning();
@@ -676,7 +678,7 @@ class Storage {
 
     // Check cache first
     const cacheKey = `inquiries_${JSON.stringify(options)}`;
-    const cached = this.getFromCache<any>(cacheKey);
+    const cached = this.getFromCache<unknown>(cacheKey);
     if (cached) {
       return cached;
     }
@@ -689,7 +691,10 @@ class Storage {
           whereConditions.push(eq(schema.inquiries.status, status));
         }
         if (propertyId) {
-          whereConditions.push(eq(schema.inquiries.propertyId, propertyId));
+          const propertyIdNum = parseInt(propertyId);
+          if (!isNaN(propertyIdNum)) {
+            whereConditions.push(eq(schema.inquiries.propertyId, propertyIdNum));
+          }
         }
         if (priority) {
           whereConditions.push(eq(schema.inquiries.priority, priority));
@@ -697,11 +702,13 @@ class Storage {
         if (search) {
           const searchTerm = `%${search}%`;
           whereConditions.push(
-            sql`${schema.inquiries.firstName} ILIKE ${searchTerm} OR 
-                ${schema.inquiries.lastName} ILIKE ${searchTerm} OR 
-                ${schema.inquiries.subject} ILIKE ${searchTerm} OR 
-                ${schema.inquiries.message} ILIKE ${searchTerm} OR
-                ${schema.inquiries.email} ILIKE ${searchTerm}`
+            or(
+              like(schema.inquiries.firstName, searchTerm),
+              like(schema.inquiries.lastName, searchTerm),
+              like(schema.inquiries.subject, searchTerm),
+              like(schema.inquiries.message, searchTerm),
+              like(schema.inquiries.email, searchTerm)
+            )
           );
         }
 
@@ -769,7 +776,7 @@ class Storage {
     }
   }
 
-  async getUser(id: string) {
+  async getUser(id: number) {
     try {
       const [user] = await db.select()
         .from(schema.users)
@@ -782,7 +789,7 @@ class Storage {
     }
   }
 
-  async updateUser(id: string, data: any) {
+  async updateUser(id: number, data: Partial<typeof schema.users.$inferInsert>) {
     const [user] = await db.update(schema.users)
       .set(data)
       .where(eq(schema.users.id, id))
@@ -796,7 +803,7 @@ class Storage {
     const cacheKey = 'dashboard_stats';
     
     if (useCache) {
-      const cached = this.getFromCache<any>(cacheKey);
+      const cached = this.getFromCache<unknown>(cacheKey);
       if (cached) {
         return cached;
       }
@@ -862,11 +869,9 @@ class Storage {
     limit?: number; 
     offset?: number; 
     type?: string; 
-    status?: string; 
     search?: string;
-    assignedAgent?: string;
   } = {}) {
-    const { limit = 10, offset = 0, type, status, search, assignedAgent } = options;
+    const { limit = 10, offset = 0, type, search } = options;
 
     try {
       const whereConditions = [];
@@ -918,30 +923,21 @@ class Storage {
   }
 
   // Create new customer
-  async createCustomer(data: any) {
+  async createCustomer(data: Record<string, unknown>) {
     try {
       const [customer] = await db.insert(schema.customers)
         .values({
-          name: data.name,
-          email: data.email,
-          phone: data.phone || null,
-          type: data.type || 'lead',
-          source: data.source || null,
-          status: data.status || 'new',
-          leadScore: data.leadScore || 50,
-          assignedAgent: data.assignedAgent || null,
-          budgetMin: data.budgetMin || null,
-          budgetMax: data.budgetMax || null,
-          preferredLocations: data.preferredLocations || [],
-          propertyTypes: data.propertyTypes || [],
-          timeline: data.timeline || null,
-          address: data.address || null,
-          occupation: data.occupation || null,
-          company: data.company || null,
-          notes: data.notes || null,
-          tags: data.tags || [],
-          lastContactDate: new Date(),
-          nextFollowUp: data.nextFollowUp || null
+          firstName: (data.firstName || (data.name as string)?.split(' ')[0] || '') as string,
+          lastName: (data.lastName || (data.name as string)?.split(' ').slice(1).join(' ') || '') as string,
+          email: data.email as string,
+          phone: (data.phone || null) as string | null,
+          customerType: ((data.type || data.customerType || 'lead') as string),
+          source: (data.source || null) as string | null,
+          minBudget: ((data.budgetMin || data.minBudget || null) as number | null),
+          maxBudget: ((data.budgetMax || data.maxBudget || null) as number | null),
+          preferredLocations: (data.preferredLocations || null) as string | null,
+          notes: (data.notes || null) as string | null,
+          lastContactAt: new Date()
         })
         .returning();
 
@@ -968,7 +964,7 @@ class Storage {
   }
 
   // Update customer
-  async updateCustomer(id: number, data: any) {
+  async updateCustomer(id: number, data: Record<string, unknown>) {
     try {
       const [customer] = await db.update(schema.customers)
         .set({
@@ -1001,7 +997,7 @@ class Storage {
   // CRM FUNCTIONS - APPOINTMENTS
   // ========================================
 
-  async getAppointments(options: { limit?: number; offset?: number; agentId?: string; status?: string; date?: string } = {}) {
+  async getAppointments(options: { limit?: number; offset?: number; agentId?: number; status?: string; date?: string } = {}) {
     const { limit = 10, offset = 0, agentId, status, date } = options;
 
     try {
@@ -1014,7 +1010,7 @@ class Storage {
         whereConditions.push(eq(schema.appointments.status, status));
       }
       if (date) {
-        whereConditions.push(sql`DATE(${schema.appointments.scheduledDate}) = ${date}`);
+        whereConditions.push(sql`DATE(${schema.appointments.startTime}) = ${date}`);
       }
 
       const whereClause = whereConditions.length > 0 
@@ -1025,7 +1021,7 @@ class Storage {
         db.select()
           .from(schema.appointments)
           .where(whereClause)
-          .orderBy(desc(schema.appointments.scheduledDate))
+          .orderBy(desc(schema.appointments.startTime))
           .limit(limit)
           .offset(offset),
         db.select({ count: sql<number>`count(*)` })
@@ -1043,24 +1039,29 @@ class Storage {
     }
   }
 
-  async createAppointment(data: any) {
+  async createAppointment(data: Record<string, unknown>) {
     try {
+      const startTime = new Date((data.scheduledDate || data.startTime) as string | Date);
+      // endTime is required in schema, use provided value or default to 1 hour after start
+      const endTime = data.endDate 
+        ? new Date(data.endDate as string | Date) 
+        : (data.endTime 
+          ? new Date(data.endTime as string | Date) 
+          : new Date(startTime.getTime() + 60 * 60 * 1000)); // +1 hour
+      
       const [appointment] = await db.insert(schema.appointments)
         .values({
-          title: data.title,
-          type: data.type,
-          status: data.status || 'scheduled',
-          customerId: data.customerId || null,
-          agentId: data.agentId,
-          propertyId: data.propertyId || null,
-          scheduledDate: new Date(data.scheduledDate),
-          endDate: data.endDate ? new Date(data.endDate) : null,
-          duration: data.duration || 60,
-          location: data.location || null,
-          address: data.address || null,
-          notes: data.notes || null,
-          preparation: data.preparation || null,
-          reminderSettings: data.reminderSettings || null
+          title: data.title as string,
+          type: data.type as string,
+          status: (data.status || 'scheduled') as string,
+          customerId: (data.customerId || null) as number | null,
+          propertyId: (data.propertyId || null) as number | null,
+          startTime: startTime,
+          endTime: endTime,
+          location: (data.location || null) as string | null,
+          notes: (data.notes || null) as string | null,
+          googleCalendarEventId: ((data.calendarEventId || data.googleCalendarEventId || null) as string | null),
+          calendarSyncStatus: ((data.calendarSyncStatus || 'pending') as string)
         })
         .returning();
 
@@ -1081,11 +1082,8 @@ class Storage {
       const users = await db.select({
         id: schema.users.id,
         username: schema.users.username,
-        email: schema.users.email,
         role: schema.users.role,
-        name: schema.users.name,
-        createdAt: schema.users.createdAt,
-        updatedAt: schema.users.updatedAt
+        createdAt: schema.users.createdAt
       }).from(schema.users);
       return users;
     } catch (error) {
@@ -1219,29 +1217,22 @@ class Storage {
   // CRM FUNCTIONS - CUSTOMER INTERACTIONS  
   // ========================================
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async createCustomerInteraction(data: any) {
     try {
       const [interaction] = await db.insert(schema.customerInteractions)
         .values({
           customerId: data.customerId,
-          agentId: data.agentId || null,
           type: data.type,
           subject: data.subject || null,
-          notes: data.notes || null,
-          outcome: data.outcome || null,
-          nextAction: data.nextAction || null,
-          scheduledDate: data.scheduledDate ? new Date(data.scheduledDate) : null,
-          completedDate: data.completedDate ? new Date(data.completedDate) : new Date(),
-          duration: data.duration || null,
-          propertyId: data.propertyId || null,
-          communicationMethod: data.communicationMethod || null,
-          attachments: data.attachments || []
+          content: data.notes || data.description || data.content || null,
+          interactionDate: data.completedDate ? new Date(data.completedDate) : new Date()
         })
         .returning();
 
       // Update customer's last contact date
       await db.update(schema.customers)
-        .set({ lastContactDate: new Date() })
+        .set({ lastContactAt: new Date() })
         .where(eq(schema.customers.id, data.customerId));
 
       return this.mapCustomerInteraction(interaction);
@@ -1256,7 +1247,7 @@ class Storage {
   // ========================================
 
   async getLeads(options: { limit?: number; offset?: number; stage?: string; agentId?: string } = {}) {
-    const { limit = 10, offset = 0, stage, agentId } = options;
+    const { limit = 10, offset = 0, stage } = options;
 
     try {
       const whereConditions = [];
@@ -1264,9 +1255,10 @@ class Storage {
       if (stage) {
         whereConditions.push(eq(schema.leads.stage, stage));
       }
-      if (agentId) {
-        whereConditions.push(eq(schema.leads.agentId, agentId));
-      }
+      // agentId field doesn't exist in leads schema
+      // if (agentId) {
+      //   whereConditions.push(eq(schema.leads.agentId, agentId));
+      // }
 
       const whereClause = whereConditions.length > 0 
         ? whereConditions.reduce((acc, condition) => sql`${acc} AND ${condition}`) 
@@ -1294,22 +1286,19 @@ class Storage {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async createLead(data: any) {
     try {
       const [lead] = await db.insert(schema.leads)
         .values({
           customerId: data.customerId,
           propertyId: data.propertyId || null,
-          agentId: data.agentId || null,
           stage: data.stage || 'new',
           probability: data.probability || 25,
-          value: data.value || null,
-          dealType: data.dealType || null,
-          commission: data.commission || null,
+          value: data.value || data.estimatedValue || 0,
+          dealType: data.dealType || 'not_specified',
           expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : null,
-          notes: data.notes || null,
-          nextAction: data.nextAction || null,
-          actionDueDate: data.actionDueDate ? new Date(data.actionDueDate) : null
+          notes: data.notes || null
         })
         .returning();
 
@@ -1324,6 +1313,7 @@ class Storage {
   // CRM MAPPER FUNCTIONS
   // ========================================
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapCustomer(row: any) {
     return {
       id: row.id,
@@ -1353,6 +1343,7 @@ class Storage {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapCustomerInteraction(row: any) {
     return {
       id: row.id,
@@ -1374,6 +1365,7 @@ class Storage {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapAppointment(row: any) {
     return {
       id: row.id,
@@ -1401,6 +1393,7 @@ class Storage {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapLead(row: any) {
     return {
       id: row.id,
@@ -1976,6 +1969,7 @@ class Storage {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapGalleryImage(row: any): GalleryImage {
     return {
       ...row,
@@ -1984,6 +1978,7 @@ class Storage {
     } as GalleryImage;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapInquiry(row: any): Inquiry {
     return {
       ...row,
@@ -2251,158 +2246,73 @@ class Storage {
 
   private getMimeTypeFromExtension(filename: string): string {
     const ext = path.extname(filename).toLowerCase();
-    const mimeTypes = {
+    const mimeTypes: Record<string, string> = {
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',
       '.png': 'image/png',
       '.gif': 'image/gif',
       '.webp': 'image/webp'
     };
-    return (mimeTypes as any)[ext] || 'image/jpeg';
+    return mimeTypes[ext] || 'image/jpeg';
   }
 
   // Design Settings Management
-  async getDesignSettings(): Promise<any | null> {
+  async getDesignSettings(): Promise<Record<string, unknown> | null> {
     try {
       await this.ensureInitialized();
       
-      // Get all active design settings from the designSettings table
-      const settings = await db.select()
+      // Get first design settings record (new schema structure)
+      const [settings] = await db.select()
         .from(schema.designSettings)
-        .where(eq(schema.designSettings.isActive, true));
+        .limit(1);
       
-      if (settings.length === 0) {
+      if (!settings) {
         return null;
       }
 
-      // Convert flat key-value pairs back to nested structure
-      const result: any = {
-        light: { colors: {}, typography: {} },
-        dark: { colors: {}, typography: {} },
-        palette: []
-      };
-
-      settings.forEach(setting => {
-        const { key, value, category } = setting;
-        
-        if (key.startsWith('light.colors.')) {
-          const colorKey = key.replace('light.colors.', '');
-          result.light.colors[colorKey] = value;
-        } else if (key.startsWith('light.typography.')) {
-          const typographyKey = key.replace('light.typography.', '');
-          result.light.typography[typographyKey] = value;
-        } else if (key.startsWith('dark.colors.')) {
-          const colorKey = key.replace('dark.colors.', '');
-          result.dark.colors[colorKey] = value;
-        } else if (key.startsWith('dark.typography.')) {
-          const typographyKey = key.replace('dark.typography.', '');
-          result.dark.typography[typographyKey] = value;
-        } else if (key === 'palette') {
-          result.palette = value;
-        }
-      });
-      
-      return result;
+      // Return settings directly (schema is now flat)
+      return settings;
     } catch (error) {
       console.error('❌ Failed to get design settings:', (error as Error).message);
       return null;
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async setDesignSettings(settings: any): Promise<boolean> {
     try {
       await this.ensureInitialized();
       
-      // Convert nested settings structure to flat key-value pairs
-      const settingsToUpsert: Array<{ key: string; value: any; category: string; description?: string }> = [];
-      
-      // Process light theme colors
-      if (settings.light?.colors) {
-        Object.entries(settings.light.colors).forEach(([colorKey, colorValue]) => {
-          settingsToUpsert.push({
-            key: `light.colors.${colorKey}`,
-            value: colorValue,
-            category: 'colors',
-            description: `Light theme color: ${colorKey}`
+      // Simple upsert - schema is flat now
+      const [existing] = await db.select()
+        .from(schema.designSettings)
+        .limit(1);
+
+      if (existing) {
+        await db.update(schema.designSettings)
+          .set({
+            theme: settings.theme || existing.theme,
+            primaryColor: settings.primaryColor || existing.primaryColor,
+            accentColor: settings.accentColor || existing.accentColor,
+            fontFamily: settings.fontFamily || existing.fontFamily,
+            logoUrl: settings.logoUrl || existing.logoUrl,
+            faviconUrl: settings.faviconUrl || existing.faviconUrl,
+            customCss: settings.customCss || existing.customCss,
+            updatedAt: new Date()
+          })
+          .where(eq(schema.designSettings.id, existing.id));
+      } else {
+        await db.insert(schema.designSettings)
+          .values({
+            theme: settings.theme || 'light',
+            primaryColor: settings.primaryColor || null,
+            accentColor: settings.accentColor || null,
+            fontFamily: settings.fontFamily || null,
+            logoUrl: settings.logoUrl || null,
+            faviconUrl: settings.faviconUrl || null,
+            customCss: settings.customCss || null
           });
-        });
       }
-      
-      // Process light theme typography
-      if (settings.light?.typography) {
-        Object.entries(settings.light.typography).forEach(([typographyKey, typographyValue]) => {
-          settingsToUpsert.push({
-            key: `light.typography.${typographyKey}`,
-            value: typographyValue,
-            category: 'typography',
-            description: `Light theme typography: ${typographyKey}`
-          });
-        });
-      }
-      
-      // Process dark theme colors
-      if (settings.dark?.colors) {
-        Object.entries(settings.dark.colors).forEach(([colorKey, colorValue]) => {
-          settingsToUpsert.push({
-            key: `dark.colors.${colorKey}`,
-            value: colorValue,
-            category: 'colors',
-            description: `Dark theme color: ${colorKey}`
-          });
-        });
-      }
-      
-      // Process dark theme typography
-      if (settings.dark?.typography) {
-        Object.entries(settings.dark.typography).forEach(([typographyKey, typographyValue]) => {
-          settingsToUpsert.push({
-            key: `dark.typography.${typographyKey}`,
-            value: typographyValue,
-            category: 'typography',
-            description: `Dark theme typography: ${typographyKey}`
-          });
-        });
-      }
-      
-      // Process palette
-      if (settings.palette) {
-        settingsToUpsert.push({
-          key: 'palette',
-          value: settings.palette,
-          category: 'palette',
-          description: 'Color palette options'
-        });
-      }
-      
-      // Use transaction to ensure atomicity
-      await db.transaction(async (tx) => {
-        // First, deactivate all existing design settings
-        await tx.update(schema.designSettings)
-          .set({ isActive: false })
-          .where(eq(schema.designSettings.isActive, true));
-        
-        // Insert new settings
-        for (const setting of settingsToUpsert) {
-          await tx.insert(schema.designSettings)
-            .values({
-              key: setting.key,
-              value: setting.value,
-              category: setting.category,
-              description: setting.description,
-              isActive: true
-            })
-            .onConflictDoUpdate({
-              target: schema.designSettings.key,
-              set: {
-                value: setting.value,
-                category: setting.category,
-                description: setting.description,
-                isActive: true,
-                updatedAt: sql`CURRENT_TIMESTAMP`
-              }
-            });
-        }
-      });
       
       console.log('✅ Design settings updated successfully');
       return true;
@@ -2413,17 +2323,17 @@ class Storage {
   }
 
   // Calendar methods (stubs for now)
-  async getAllCalendarConnections(): Promise<any[]> {
+  async getAllCalendarConnections(): Promise<Record<string, unknown>[]> {
     console.log('📅 getAllCalendarConnections: Not implemented yet');
     return [];
   }
 
-  async getAllCalendarEvents(): Promise<any[]> {
+  async getAllCalendarEvents(): Promise<Record<string, unknown>[]> {
     console.log('📅 getAllCalendarEvents: Not implemented yet');
     return [];
   }
 
-  async getAllCalendarSyncLogs(): Promise<any[]> {
+  async getAllCalendarSyncLogs(): Promise<Record<string, unknown>[]> {
     console.log('📅 getAllCalendarSyncLogs: Not implemented yet');
     return [];
   }

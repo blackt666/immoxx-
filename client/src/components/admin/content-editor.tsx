@@ -1,4 +1,3 @@
-/* eslint-disable react/forbid-dom-props */
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -515,23 +514,41 @@ export default function ContentEditor() {
     });
   };
   
-  const handleTemplateSelect = (template: { name: string; content: Record<string, { hero?: object, about?: object, contact?: object }> }) => {
-    if (template.content.hero) {
+  interface DownloadContent {
+    hero?: { title?: string; subtitle?: string; backgroundImage?: string };
+    about?: { title?: string; description?: string };
+    contact?: { title?: string; address?: string; phone?: string; email?: string };
+  }
+  
+  interface Template {
+    id: string;
+    name: string;
+    category: string;
+    description: string;
+    content: DownloadContent;
+    preview: string;
+    downloadContent: DownloadContent;
+  }
+  
+  const handleTemplateSelect = (template: Template) => {
+    const content = template.downloadContent || template.content;
+    
+    if (content.hero) {
       setContentData(prev => ({
         ...prev,
-        hero: { ...prev.hero, ...template.content.hero }
+        hero: { ...prev.hero, ...content.hero }
       }));
     }
-    if (template.content.about) {
+    if (content.about) {
       setContentData(prev => ({
         ...prev,
-        about: { ...prev.about, ...template.content.about }
+        about: { ...prev.about, ...content.about }
       }));
     }
-    if (template.content.contact) {
+    if (content.contact) {
       setContentData(prev => ({
         ...prev,
-        contact: { ...prev.contact, ...template.content.contact }
+        contact: { ...prev.contact, ...content.contact }
       }));
     }
     
@@ -549,20 +566,20 @@ export default function ContentEditor() {
       ...designSettings,
       fontFamily,
       light: {
-        ...(designSettings as any).light,
+        ...(designSettings as unknown as Record<string, Record<string, unknown>>).light,
         typography: {
-          ...((designSettings as any).light?.typography || {}),
+          ...((designSettings as unknown as Record<string, Record<string, Record<string, unknown>>>).light?.typography || {}),
           fontFamily: fontFamily
         }
       },
       dark: {
-        ...(designSettings as any).dark,
+        ...(designSettings as unknown as Record<string, Record<string, unknown>>).dark,
         typography: {
-          ...((designSettings as any).dark?.typography || {}),
+          ...((designSettings as unknown as Record<string, Record<string, Record<string, unknown>>>).dark?.typography || {}),
           fontFamily: fontFamily
         }
       }
-    } as any;
+    } as unknown as DesignSettings;
     
     try {
       await updateSettings(updatedSettings);
@@ -587,20 +604,20 @@ export default function ContentEditor() {
     const updatedSettings: DesignSettings = {
       ...designSettings,
       light: {
-        ...(designSettings as any).light,
+        ...(designSettings as unknown as Record<string, Record<string, unknown>>).light,
         colors: {
-          ...((designSettings as any).light?.colors || {}),
+          ...((designSettings as unknown as Record<string, Record<string, Record<string, unknown>>>).light?.colors || {}),
           [colorKey]: colorValue
         }
       },
       dark: {
-        ...(designSettings as any).dark,
+        ...(designSettings as unknown as Record<string, Record<string, unknown>>).dark,
         colors: {
-          ...((designSettings as any).dark?.colors || {}),
+          ...((designSettings as unknown as Record<string, Record<string, Record<string, unknown>>>).dark?.colors || {}),
           [colorKey]: colorValue
         }
       }
-    } as any;
+    } as unknown as DesignSettings;
     
     try {
       await updateSettings(updatedSettings);
@@ -1103,15 +1120,14 @@ export default function ContentEditor() {
                         key={font.value}
                         onClick={() => handleFontChange(font.value)}
                         className={`w-full text-left p-4 rounded-lg border transition-all ${
-                          designSettings?.light.typography?.fontFamily === font.value
+                          (designSettings as unknown as Record<string, Record<string, Record<string, string>>>)?.light?.typography?.fontFamily === font.value
                             ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-200'
                             : 'bg-white hover:bg-gray-50'
                         }`}
                       >
                         <p className="font-medium text-gray-800">{font.name}</p>
                         <p className="text-sm text-gray-500">{font.category}</p>
-                        {/* eslint-disable-next-line react/forbid-dom-props */}
-                        <p className="mt-2 text-lg" style={{ fontFamily: font.value }}>
+                        <p className="mt-2 text-lg" data-font-preview={font.value}>
                           The quick brown fox jumps over the lazy dog.
                         </p>
                       </button>
@@ -1123,9 +1139,7 @@ export default function ContentEditor() {
                 <div className="space-y-6">
                   <h3 className="text-lg font-semibold text-gray-900">Live-Vorschau</h3>
                   {designSettings && (
-                    /* eslint-disable-next-line react/forbid-dom-props */
-                    /* @ts-expect-error - light/dark properties added dynamically */
-                    <div className="border rounded-lg p-6 space-y-4 bg-white" style={{ fontFamily: (designSettings as any)?.light?.typography?.fontFamily } as React.CSSProperties}>
+                    <div className="border rounded-lg p-6 space-y-4 bg-white" data-font-family={(designSettings as unknown as Record<string, Record<string, Record<string, string>>>)?.light?.typography?.fontFamily}>
                       <h1 className="text-4xl font-bold">Überschrift 1</h1>
                       <h2 className="text-3xl font-semibold">Überschrift 2</h2>
                       <h3 className="text-2xl font-semibold">Überschrift 3</h3>
@@ -1149,22 +1163,22 @@ export default function ContentEditor() {
                   <h3 className="text-lg font-semibold text-gray-900">Farbpalette anpassen</h3>
                   {designSettings && (
                     <div className="space-y-4">
-                      {Object.entries((designSettings as any)?.light?.colors || {}).map(([key, value]) => (
+                      {Object.entries((designSettings as unknown as Record<string, Record<string, Record<string, string>>>)?.light?.colors || {}).map(([key, value]) => (
                         <div key={key} className="flex items-center justify-between p-3 rounded-lg border bg-white">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-md border" style={{ backgroundColor: value } as React.CSSProperties} />
+                            <div className="w-8 h-8 rounded-md border" data-bg-color={value} />
                             <span className="text-sm font-medium capitalize text-gray-700">{key.replace(/([A-Z])/g, ' $1')}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Input
                               type="color"
-                              value={value}
+                              value={String(value)}
                               onChange={(e) => handleColorChange(key, e.target.value)}
                               className="w-12 h-8 p-1"
                             />
                             <Input
                               type="text"
-                              value={value}
+                              value={String(value)}
                               onChange={(e) => handleColorChange(key, e.target.value)}
                               className="w-24"
                             />

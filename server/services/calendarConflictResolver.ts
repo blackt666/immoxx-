@@ -38,7 +38,7 @@ export interface ConflictResolutionStrategy {
 
 export class CalendarConflictResolver {
   private readonly DEFAULT_TIME_THRESHOLD = 5; // 5 minutes
-  private readonly CRITICAL_FIELDS = ['scheduledDate', 'customerId', 'propertyId'];
+  private readonly CRITICAL_FIELDS = ['startTime', 'customerId', 'propertyId'];
 
   constructor() {}
 
@@ -150,10 +150,8 @@ export class CalendarConflictResolver {
    * Detect timing conflicts between appointment and calendar event
    */
   private detectTimingConflict(appointment: Appointment, calendarEvent: any): SyncConflict | null {
-    const appointmentStart = new Date(appointment.scheduledDate);
-    const appointmentEnd = appointment.endDate 
-      ? new Date(appointment.endDate)
-      : addMinutes(appointmentStart, appointment.duration || 60);
+    const appointmentStart = new Date(appointment.startTime);
+    const appointmentEnd = new Date(appointment.endTime);
 
     const eventStart = new Date(calendarEvent.startTime);
     const eventEnd = new Date(calendarEvent.endTime);
@@ -166,7 +164,7 @@ export class CalendarConflictResolver {
       return {
         id: `timing_${appointment.id}_${Date.now()}`,
         type: 'timing_conflict',
-        appointmentId: appointment.id,
+        appointmentId: String(appointment.id),
         crmData: appointment,
         calendarData: calendarEvent,
         conflictDetails: {
@@ -195,7 +193,7 @@ export class CalendarConflictResolver {
       conflicts.push({
         id: `title_${appointment.id}_${Date.now()}`,
         type: 'data_mismatch',
-        appointmentId: appointment.id,
+        appointmentId: String(appointment.id),
         crmData: appointment,
         calendarData: calendarEvent,
         conflictDetails: {
@@ -210,16 +208,16 @@ export class CalendarConflictResolver {
     }
 
     // Location mismatch
-    if (appointment.location !== calendarEvent.location && appointment.address !== calendarEvent.location) {
+    if (appointment.location !== calendarEvent.location) {
       conflicts.push({
         id: `location_${appointment.id}_${Date.now()}`,
         type: 'data_mismatch',
-        appointmentId: appointment.id,
+        appointmentId: String(appointment.id),
         crmData: appointment,
         calendarData: calendarEvent,
         conflictDetails: {
           field: 'location',
-          crmValue: appointment.location || appointment.address,
+          crmValue: appointment.location,
           calendarValue: calendarEvent.location,
         },
         severity: 'medium',
@@ -233,7 +231,7 @@ export class CalendarConflictResolver {
       conflicts.push({
         id: `description_${appointment.id}_${Date.now()}`,
         type: 'data_mismatch',
-        appointmentId: appointment.id,
+        appointmentId: String(appointment.id),
         crmData: appointment,
         calendarData: calendarEvent,
         conflictDetails: {
@@ -265,7 +263,7 @@ export class CalendarConflictResolver {
         return {
           id: `duplicate_${appointment.id}_${Date.now()}`,
           type: 'duplicate_event',
-          appointmentId: appointment.id,
+          appointmentId: String(appointment.id),
           crmData: appointment,
           calendarData: calendarEvent,
           conflictDetails: {
@@ -362,8 +360,8 @@ export class CalendarConflictResolver {
           await db
             .update(appointments)
             .set({
-              scheduledDate: new Date(calendarData.startTime),
-              endDate: new Date(calendarData.endTime),
+              startTime: new Date(calendarData.startTime),
+              endTime: new Date(calendarData.endTime),
               updatedAt: new Date(),
             })
             .where(eq(appointments.id, conflict.appointmentId));

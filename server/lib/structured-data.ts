@@ -39,7 +39,7 @@ export interface StructuredDataProperty {
 }
 
 export class StructuredDataManager {
-  static async generatePropertyStructuredData(propertyId: string, baseUrl: string): Promise<string> {
+  static async generatePropertyStructuredData(propertyId: number, baseUrl: string): Promise<string> {
     try {
       const properties = await db
         .select()
@@ -60,10 +60,10 @@ export class StructuredDataManager {
         description: property.description || "",
         address: {
           "@type": "PostalAddress",
-          streetAddress: property.address || "",
-          addressLocality: this.extractCity(property.address || ""),
+          streetAddress: property.location || "",
+          addressLocality: this.extractCity(property.location || ""),
           addressRegion: "Baden-Württemberg",
-          postalCode: this.extractPostalCode(property.address || ""),
+          postalCode: this.extractPostalCode(property.location || ""),
           addressCountry: "DE"
         },
         geo: {
@@ -94,11 +94,7 @@ export class StructuredDataManager {
       }
 
       // Note: yearBuilt field not available in current schema
-
-      // Add images if available
-      if (property.images && property.images.length > 0) {
-        structuredData.image = property.images.map(img => `${baseUrl}${img}`);
-      }
+      // Note: images are stored in galleryImages table, not directly in properties table
 
       return `<script type="application/ld+json">
 ${JSON.stringify(structuredData, null, 2)}

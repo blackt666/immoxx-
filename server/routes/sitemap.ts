@@ -37,8 +37,8 @@ router.get("/sitemap.xml", async (req, res) => {
     // Add property pages with enhanced metadata
     try {
       const { db } = await import("../db.js");
-      const { propertiesTable } = await import("../../shared/schema.js");
-      const properties = await db.select().from(propertiesTable);
+      const schema = await import("../../shared/schema.js");
+      const properties = await db.select().from(schema.properties);
 
       properties.forEach((property) => {
         sitemap += `  <url>

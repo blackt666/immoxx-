@@ -1,8 +1,4 @@
 
-import { db } from "../db.js";
-import * as schema from "@shared/schema";
-import { eq } from "drizzle-orm";
-
 export interface SEOData {
   title: string;
   description: string;
@@ -14,34 +10,14 @@ export interface SEOData {
 }
 
 export class SEOManager {
-  private static activeStrategy: any = null;
+  private static activeStrategy: SEOData | null = null;
   private static lastUpdate = 0;
   private static CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   static async getActiveSEO(section: string): Promise<SEOData | null> {
     try {
-      // Cache check
-      if (
-        this.activeStrategy && 
-        Date.now() - this.lastUpdate < this.CACHE_DURATION
-      ) {
-        return this.getSectionSEO(section);
-      }
-
-      // Fetch active strategy
-      const activeStrategies = await db
-        .select()
-        .from(schema.seoStrategiesTable)
-        .where(eq(schema.seoStrategiesTable.isActive, true))
-        .limit(1);
-
-      if (activeStrategies.length > 0) {
-        this.activeStrategy = activeStrategies[0];
-        this.lastUpdate = Date.now();
-        return this.getSectionSEO(section);
-      }
-
-      return null;
+      // seoStrategiesTable doesn't exist in schema, so just return default SEO
+      return this.getSectionSEO(section);
     } catch (error) {
       console.error("Error fetching active SEO:", error);
       return null;
@@ -49,22 +25,28 @@ export class SEOManager {
   }
 
   private static getSectionSEO(section: string): SEOData | null {
-    if (!this.activeStrategy?.sections) return null;
-
-    try {
-      const sections = JSON.parse(this.activeStrategy.sections);
-      return sections[section] || null;
-    } catch (error) {
-      console.error("Error parsing SEO sections:", error);
-      return null;
-    }
+    // Return default SEO data for the section
+    const defaultSEO = {
+      home: {
+        title: "Bodensee Immobilien Müller | Immobilienmakler für die Bodenseeregion",
+        description: "Ihr Experte für Immobilien am Bodensee. Über 20 Jahre Erfahrung in der Vermittlung von Wohnungen, Häusern und Villen in Friedrichshafen und Umgebung.",
+        keywords: "Immobilienmakler Bodensee, Wohnung kaufen Bodensee, Haus verkaufen Friedrichshafen"
+      },
+      properties: {
+        title: "Immobilien am Bodensee | Exklusive Angebote",
+        description: "Entdecken Sie unsere exklusiven Immobilien in den schönsten Lagen rund um den Bodensee.",
+        keywords: "Immobilien Bodensee, Häuser Bodensee, Wohnungen Bodensee"
+      }
+    };
+    
+    return defaultSEO[section as keyof typeof defaultSEO] || defaultSEO.home;
   }
 
   static async generateMetaTags(section: string, baseUrl: string): Promise<string> {
     const seoData = await this.getActiveSEO(section);
     
     if (!seoData) {
-      return this.getDefaultMetaTags(section, baseUrl);
+      return this.getDefaultMetaTags(section);
     }
 
     return `
@@ -85,7 +67,7 @@ export class SEOManager {
     `;
   }
 
-  private static getDefaultMetaTags(section: string, baseUrl: string): string {
+  private static getDefaultMetaTags(section: string): string {
     const defaultSEO = {
       home: {
         title: "Bodensee Immobilien Müller | Immobilienmakler für die Bodenseeregion",

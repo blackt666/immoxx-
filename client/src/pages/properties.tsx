@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Home, Bed, Bath, Square, Loader2 } from "lucide-react";
-import { BODENSEE_CITIES, PROPERTY_TYPES, getCityLabel } from "@shared/constants";
+import { BODENSEE_CITIES, PROPERTY_TYPES } from "@shared/constants";
 import type { Property } from "@shared/schema";
 
 
@@ -153,9 +153,9 @@ export default function Properties() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle Typen</SelectItem>
-                {Object.values(PROPERTY_TYPES).map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                {PROPERTY_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -171,8 +171,8 @@ export default function Properties() {
               <SelectContent>
                 <SelectItem value="all">Alle Städte</SelectItem>
                 {BODENSEE_CITIES.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {getCityLabel(city)}
+                  <SelectItem key={city.value} value={city.value}>
+                    {city.label}
                   </SelectItem>
                 ))}
               </SelectContent>

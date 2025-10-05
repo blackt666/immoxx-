@@ -358,7 +358,7 @@ async function continueBackgroundInitialization() {
       console.log('🔧 Setting up Vite dev middleware...');
       try {
         // Dynamic import to prevent module resolution failures when vite is not available
-        const { setupVite } = await import('./vite.ts');
+        const { setupVite } = await import('./vite');
         await setupVite(app);
         console.log('✅ Vite dev middleware ready');
       } catch (error) {

@@ -7,11 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   MapPin,
-  BedDouble,
   Bath,
-  Square,
-  Euro,
-  Calendar,
   ArrowRight,
   Eye,
   ExternalLink,
@@ -19,72 +15,76 @@ import {
   Bed,
 } from "lucide-react";
 
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import TourModal from "./tour-modal";
 import { ShareProperty } from "./share-property";
 
+// Extended Property type with images for display
+type PropertyWithImages = Partial<Property> & { 
+  id: number;
+  title: string;
+  type: string;
+  location: string;
+  price: number;
+  images?: string[];
+};
+
 // GARANTIERT OFFLINE - STATISCHE DATEN
-const STATIC_PROPERTIES: Property[] = [
+const STATIC_PROPERTIES: PropertyWithImages[] = [
   {
-    id: "static-1",
+    id: 1,
     title: "Luxusvilla am Bodensee",
     description: "Exklusive Villa mit direktem Seeblick",
     type: "villa",
     location: "Konstanz",
-    address: null,
-    price: "1200000",
+    city: "Konstanz",
+    country: "Germany",
+    price: 1200000,
+    currency: "EUR",
     size: 250,
-    area: 250,
     rooms: null,
     bathrooms: 3,
     bedrooms: 5,
     status: "available",
-    condition: null,
-    features: null,
     images: ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop"],
-    agentId: null,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    id: "static-2",
+    id: 2,
     title: "Moderne Wohnung in Meersburg",
     description: "Helle Wohnung mit Balkon und Seeblick",
     type: "apartment",
     location: "Meersburg",
-    address: null,
-    price: "650000",
+    city: "Meersburg",
+    country: "Germany",
+    price: 650000,
+    currency: "EUR",
     size: 120,
-    area: 120,
     rooms: null,
     bathrooms: 2,
     bedrooms: 3,
     status: "available",
-    condition: null,
-    features: null,
     images: ["https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop"],
-    agentId: null,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    id: "static-3",
+    id: 3,
     title: "Einfamilienhaus Friedrichshafen",
     description: "Gepflegtes Einfamilienhaus in ruhiger Lage",
     type: "house",
     location: "Friedrichshafen",
-    address: null,
-    price: "850000",
+    city: "Friedrichshafen",
+    country: "Germany",
+    price: 850000,
+    currency: "EUR",
     size: 180,
-    area: 180,
     rooms: null,
     bathrooms: 2,
     bedrooms: 4,
     status: "available",
-    condition: null,
-    features: null,
     images: ["https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=800&h=600&fit=crop"],
-    agentId: null,
     createdAt: new Date(),
     updatedAt: new Date()
   }
@@ -115,7 +115,7 @@ export default function PropertiesShowcase() {
   }, []);
 
   // API-Modus aktiviert - Properties werden vom Backend geladen
-  const { data: properties, isLoading, error } = useQuery<Property[]>({
+  const { data: properties, error } = useQuery<Property[]>({
     queryKey: ["/api/properties"],
     queryFn: async () => {
       const response = await fetch('/api/properties', {
@@ -140,17 +140,17 @@ export default function PropertiesShowcase() {
     window.open(mapsUrl, "_blank");
   };
 
-  const openTour = (property: Property) => {
-    setSelectedProperty(property);
+  const openTour = (property: PropertyWithImages) => {
+    setSelectedProperty(property as Property);
     setIsTourModalOpen(true);
   };
 
-  const navigateToProperty = (propertyId: string) => {
-    setLocation(`/property/${propertyId}`);
+  const navigateToProperty = (propertyId: string | number) => {
+    setLocation(`/property/${String(propertyId)}`);
   };
 
   // FALLBACK: Bei API-Fehlern nutze statische Daten
-  const displayedProperties = (properties && Array.isArray(properties) && properties.length > 0) ? properties : STATIC_PROPERTIES;
+  const displayedProperties: PropertyWithImages[] = (properties && Array.isArray(properties) && properties.length > 0) ? properties : STATIC_PROPERTIES;
   
   if (!properties || !Array.isArray(properties) || properties.length === 0) {
     console.log("🔒 Fallback: Using static properties due to API unavailability");
@@ -188,7 +188,7 @@ export default function PropertiesShowcase() {
   };
 
   return (
-    <section id="properties" className="py-12" ref={sectionRef} style={{backgroundColor: '#F8F9FA'}}>
+    <section id="properties" className="py-12 bg-[#F8F9FA]" ref={sectionRef}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div
@@ -196,10 +196,10 @@ export default function PropertiesShowcase() {
             isVisible ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
           }`}
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6" style={{color: '#566B73'}}>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-[#566B73]">
             Aktuelle Immobilien
           </h2>
-          <p className="text-xl max-w-3xl mx-auto" style={{color: '#8C837B'}}>
+          <p className="text-xl max-w-3xl mx-auto text-[#8C837B]">
             Entdecken Sie unsere ausgewählten Immobilien in der Bodenseeregion –
             von modernen Villen bis zu charmanten Einfamilienhäusern
           </p>
@@ -207,7 +207,7 @@ export default function PropertiesShowcase() {
 
         {/* Properties Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {Array.isArray(displayedProperties) && displayedProperties.map((property: Property, index: number) => (
+          {Array.isArray(displayedProperties) && displayedProperties.map((property: PropertyWithImages, index: number) => (
             <Card
               key={property.id}
               className={`group overflow-hidden hover:shadow-xl transition-all duration-500 transform hover:-translate-y-2 ${
@@ -242,7 +242,7 @@ export default function PropertiesShowcase() {
                   </div>
                 )}
                 <div className="absolute top-4 left-4">
-                  {getStatusBadge(property.status)}
+                  {getStatusBadge(property.status || 'available')}
                 </div>
                 <div className="absolute top-4 right-4">
                   <div className="bg-black/70 text-white px-3 py-1 rounded-full text-sm font-semibold">
@@ -322,7 +322,7 @@ export default function PropertiesShowcase() {
 
                     <ShareProperty
                       property={{
-                        id: property.id,
+                        id: String(property.id),
                         title: property.title,
                         price: formatPrice(property.price),
                         location: property.location,
