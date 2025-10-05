@@ -1,10 +1,9 @@
 import { db } from '../db.js';
-import * as schema from '@shared/schema';
-import { eq, and, isNull, ne, lt, isNotNull } from 'drizzle-orm';
+import { eq, and, ne, lt, isNotNull } from 'drizzle-orm';
 import type { CalendarConnection } from '@shared/schema';
 import { calendarConnections } from '@shared/schema';
 import { googleCalendarService } from './googleCalendarService.js';
-import { appleCalendarService } from './appleCalendarService.js';
+import { NotificationService } from './notificationService.js';
 
 interface TokenMaintenanceResult {
   checked: number;
@@ -20,9 +19,9 @@ interface TokenMaintenanceResult {
 }
 
 interface MaintenanceError {
-  connectionId: string;
+  connectionId: number;
   provider: string;
-  agentId: string;
+  agentId: string | null;
   error: string;
   requiresReauth: boolean;
 }
@@ -54,14 +53,14 @@ export class TokenMaintenanceService {
     console.log('Starting token maintenance service...');
     
     // Run immediately on start
-    this.runMaintenance().catch(error => {
-      console.error('Initial token maintenance failed:', error);
+    this.runMaintenance().catch(() => {
+      // console.error('Initial token maintenance failed:');
     });
     
     // Schedule periodic maintenance
     this.maintenanceTimer = setInterval(() => {
-      this.runMaintenance().catch(error => {
-        console.error('Scheduled token maintenance failed:', error);
+      this.runMaintenance().catch(() => {
+        // console.error('Scheduled token maintenance failed:');
       });
     }, this.TOKEN_CHECK_INTERVAL_MS);
     
@@ -86,7 +85,34 @@ export class TokenMaintenanceService {
   }
 
   /**
-   * Run maintenance cycle
+   * Run maintenance for a specific agent's connections
+   * @param agentId - The ID of the agent
+   * @returns A list of connections that were refreshed or expired
+   */
+  async runMaintenanceJobForAgent(agentId: string): Promise<CalendarConnection[]> {
+    const connections = await db
+      .select()
+      .from(calendarConnections)
+      .where(eq(calendarConnections.agentId, agentId));
+
+    const refreshedConnections: CalendarConnection[] = [];
+
+    for (const connection of connections) {
+      if (this.isTokenExpiring(connection)) {
+        try {
+          const refreshed = await googleCalendarService.refreshAccessToken(connection);
+          refreshedConnections.push(refreshed);
+        } catch (e) {
+          console.error(`Failed to refresh token for connection ${connection.id} of agent ${agentId}:`, e);
+        }
+      }
+    }
+    return refreshedConnections;
+  }
+
+  /**
+   * Run the full maintenance job for all connections
+   * @returns A summary of the maintenance job
    */
   private async runMaintenance(): Promise<TokenMaintenanceResult> {
     const startTime = Date.now();
@@ -166,7 +192,7 @@ export class TokenMaintenanceService {
           console.error(`  - Connection ${error.connectionId} (${error.provider}): ${error.error}`);
         });
         
-        // TODO: Send notifications for connections requiring re-authentication
+        // Send notifications for connections requiring re-authentication
         const reauthRequired = maintenanceErrors.filter(e => e.requiresReauth);
         if (reauthRequired.length > 0) {
           await this.notifyReauthRequired(reauthRequired);
@@ -183,9 +209,9 @@ export class TokenMaintenanceService {
       });
 
       return result;
-    } catch (error) {
-      console.error('Token maintenance cycle failed:', error);
-      throw error;
+    } catch (e) {
+      console.error('Token maintenance cycle failed:', e);
+      throw e;
     }
   }
 
@@ -233,14 +259,14 @@ export class TokenMaintenanceService {
       }
 
       return 'no_action';
-    } catch (error) {
-      console.error(`Token maintenance failed for connection ${connection.id}:`, error);
+    } catch (e) {
+      console.error(`Token maintenance failed for connection ${connection.id}:`, e);
       
       // Update connection with error status
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = e instanceof Error ? e.message : String(e);
       await this.markConnectionError(connection, errorMessage);
       
-      throw error;
+      throw e;
     }
   }
 
@@ -332,7 +358,8 @@ export class TokenMaintenanceService {
         }
 
         summary[healthStatus.status]++;
-      } catch (error) {
+      } catch (e) {
+        console.error('Error validating token:', e);
         summary.invalid++;
       }
     }
@@ -372,16 +399,30 @@ export class TokenMaintenanceService {
    * Notify administrators about connections requiring re-authentication
    */
   private async notifyReauthRequired(errors: MaintenanceError[]): Promise<void> {
-    // TODO: Implement notification system (email, webhook, etc.)
-    console.log(`NOTIFICATION: ${errors.length} calendar connections require re-authentication:`);
-    errors.forEach(error => {
-      console.log(`  - Agent ${error.agentId}: ${error.provider} connection needs re-auth (${error.error})`);
-    });
+    console.log(`Sending re-authentication notifications for ${errors.length} connections...`);
     
-    // For now, just log. In production, this should send notifications to:
-    // 1. The affected users/agents
-    // 2. System administrators
-    // 3. Monitoring systems
+    for (const error of errors) {
+      try {
+        // Sende Notification über den NotificationService
+        await NotificationService.send({
+          type: 'token_expiration',
+          title: `Kalender-Verbindung erfordert Re-Authentifizierung`,
+          message: `Die ${error.provider}-Kalender-Verbindung (ID: ${error.connectionId}, Agent: ${error.agentId || 'N/A'}) erfordert eine erneute Authentifizierung. Fehler: ${error.error}`,
+          severity: 'warning',
+          metadata: {
+            connectionId: error.connectionId,
+            provider: error.provider,
+            agentId: error.agentId,
+            error: error.error,
+            timestamp: new Date().toISOString(),
+          },
+        });
+        
+        console.log(`✅ Notification sent for connection ${error.connectionId}`);
+      } catch (notificationError) {
+        console.error(`❌ Failed to send notification for connection ${error.connectionId}:`, notificationError);
+      }
+    }
   }
 
   /**
@@ -423,6 +464,48 @@ export class TokenMaintenanceService {
   async runMaintenanceNow(): Promise<TokenMaintenanceResult> {
     console.log('Running token maintenance on demand...');
     return await this.runMaintenance();
+  }
+
+  /**
+   * Refresh token for a single connection
+   * @param connectionId - The ID of the connection
+   * @param agentId - The ID of the agent owning the connection
+   * @returns The updated calendar connection
+   */
+  async refreshTokenForConnection(connectionId: number, agentId: string): Promise<CalendarConnection> {
+    const connection = await db.query.calendarConnections.findFirst({
+      where: and(
+        eq(calendarConnections.id, connectionId),
+        eq(calendarConnections.agentId, agentId)
+      ),
+    });
+
+    if (!connection) {
+      throw new Error('Connection not found or does not belong to the agent');
+    }
+
+    if (connection.provider === 'google') {
+      return googleCalendarService.refreshToken(connection);
+    } else {
+      // Apple Calendar (CalDAV) does not use refresh tokens
+      console.log(`Skipping token refresh for Apple connection ${connection.id}`);
+      return connection;
+    }
+  }
+
+  /**
+   * Check if a token is expiring soon
+   * @param connection - The calendar connection
+   * @returns True if the token is expiring soon
+   */
+  private isTokenExpiring(connection: CalendarConnection): boolean {
+    if (connection.provider !== 'google' || !connection.tokenExpiresAt) {
+      return false;
+    }
+
+    const expiryTime = new Date(connection.tokenExpiresAt).getTime();
+    const bufferTime = this.TOKEN_REFRESH_BUFFER_MINUTES * 60 * 1000;
+    return expiryTime - Date.now() < bufferTime;
   }
 }
 

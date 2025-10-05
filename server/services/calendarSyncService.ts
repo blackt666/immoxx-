@@ -122,7 +122,7 @@ export class CalendarSyncService {
     options: SyncOptions = {}
   ): Promise<SyncResult> {
     const startTime = Date.now();
-    let result: SyncResult = {
+    const result: SyncResult = {
       success: false,
       created: 0,
       updated: 0,
@@ -744,9 +744,10 @@ export class CalendarSyncService {
     operation: 'create' | 'update' | 'delete' | 'sync',
     direction: 'crm_to_calendar' | 'calendar_to_crm',
     status: 'success' | 'error' | 'skipped',
-    dataSnapshot: any = null,
+    dataSnapshot: unknown = null,
     errorMessage?: string,
-    errorDetails?: any
+    errorDetails?: unknown,
+    duration = 0
   ): Promise<void> {
     try {
       const logData: InsertCalendarSyncLog = {
@@ -759,7 +760,7 @@ export class CalendarSyncService {
         errorMessage,
         errorDetails,
         completedAt: new Date(),
-        duration: 0, // TODO: Add actual timing
+        duration,
       };
 
       await db.insert(calendarSyncLogs).values(logData);

@@ -1,14 +1,13 @@
-
 import { useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, MapPin, Home, Euro, Bed, Bath, Square, Loader2 } from "lucide-react";
-import { BODENSEE_CITIES, PROPERTY_TYPES, getCityLabel, getCitySlug } from "@shared/constants";
+import { Search, Home, Bed, Bath, Square, Loader2 } from "lucide-react";
+import { BODENSEE_CITIES, PROPERTY_TYPES, getCityLabel } from "@shared/constants";
 import type { Property } from "@shared/schema";
 
 
@@ -69,7 +68,7 @@ export default function Properties() {
       }
     });
     
-    if (!newFilters.hasOwnProperty("page")) {
+    if (!Object.prototype.hasOwnProperty.call(newFilters, "page")) {
       params.set("page", "1");
     }
     
@@ -81,15 +80,7 @@ export default function Properties() {
     updateFilters({ search: searchInput.trim() });
   }, [searchInput, updateFilters]);
 
-  const formatPrice = (price: string | number | null) => {
-    if (!price) return "Preis auf Anfrage";
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR",
-      maximumFractionDigits: 0,
-    }).format(numPrice);
-  };
+  
 
   // Loading state
   if (isLoading) {
@@ -162,9 +153,9 @@ export default function Properties() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle Typen</SelectItem>
-                {PROPERTY_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
+                {Object.values(PROPERTY_TYPES).map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -175,13 +166,13 @@ export default function Properties() {
               onValueChange={(value) => updateFilters({ location: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Standort" />
+                <SelectValue placeholder="Stadt" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Standorte</SelectItem>
+                <SelectItem value="all">Alle Städte</SelectItem>
                 {BODENSEE_CITIES.map((city) => (
-                  <SelectItem key={city.value} value={city.value}>
-                    {city.label}
+                  <SelectItem key={city} value={city}>
+                    {getCityLabel(city)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -201,7 +192,7 @@ export default function Properties() {
           {filteredProperties.length} Immobilie{filteredProperties.length !== 1 ? "n" : ""} gefunden
         </div>
         {currentFilters.search && (
-          <Badge variant="secondary">Suche: "{currentFilters.search}"</Badge>
+          <Badge variant="secondary">Suche: &quot;{currentFilters.search}&quot;</Badge>
         )}
       </div>
 
@@ -226,56 +217,26 @@ export default function Properties() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProperties.map((property) => (
-            <Card key={property.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="relative h-48 bg-gray-200">
-                <img
-                  src={property.images?.[0] || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop"}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {properties.map((property) => (
+            <Card key={property.id} className="overflow-hidden">
+              <img
                   alt={property.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-48 object-cover aspect-[3/2]"
+                  height="200"
+                  src={property.slug ? `/images/properties/${property.slug}/01.jpg` : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop"}
+                  width="300"
                 />
-                <Badge className={`absolute top-2 right-2 ${
-                  property.status === 'available' ? 'bg-green-500' : 
-                  property.status === 'reserved' ? 'bg-yellow-500' : 'bg-red-500'
-                }`}>
-                  {property.status === 'available' ? 'Verfügbar' : 
-                   property.status === 'reserved' ? 'Reserviert' : 'Verkauft'}
-                </Badge>
-              </div>
-
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold line-clamp-2">
-                  {property.title}
-                </CardTitle>
-                <div className="flex items-center text-sm text-gray-600">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  {getCityLabel(property.location)}
-                </div>
-              </CardHeader>
-
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-3 gap-2 text-sm text-gray-600 mb-4">
-                  <div className="flex items-center">
-                    <Bed className="w-4 h-4 mr-1" />
-                    {property.bedrooms || property.rooms || '-'}
+              <CardContent className="p-4">
+                <h3 className="text-lg font-semibold">{property.title}</h3>
+                <p className="text-gray-500">{property.location}</p>
+                <div className="flex justify-between items-center mt-4">
+                  <span className="text-xl font-bold">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(property.price)}</span>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span><Bed className="inline-block mr-1 h-4 w-4" /> {property.bedrooms || '-'}</span>
+                    <span><Bath className="inline-block mr-1 h-4 w-4" /> {property.bathrooms || '-'}</span>
+                    <span><Square className="inline-block mr-1 h-4 w-4" /> {property.size ? `${property.size}m²` : '-'}</span>
                   </div>
-                  <div className="flex items-center">
-                    <Bath className="w-4 h-4 mr-1" />
-                    {property.bathrooms || '-'}
-                  </div>
-                  <div className="flex items-center">
-                    <Square className="w-4 h-4 mr-1" />
-                    {property.area ? `${property.area}m²` : '-'}
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="text-xl font-bold text-blue-600 flex items-center">
-                    <Euro className="w-5 h-5 mr-1" />
-                    {formatPrice(property.price)}
-                  </div>
-                  <Button size="sm">Details ansehen</Button>
                 </div>
               </CardContent>
             </Card>
