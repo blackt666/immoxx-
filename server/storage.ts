@@ -6,8 +6,8 @@ import type {
   InsertInquiry,
   InsertCustomer,
   InsertGalleryImage,
-  Inquiry as DbInquiry,
-  GalleryImage as DbGalleryImage
+  Inquiry,
+  GalleryImage
 } from "@shared/schema";
 import { eq, desc, and, sql, like } from "drizzle-orm";
 import fs from "fs";
@@ -121,9 +121,6 @@ export interface Property {
   updatedAt: string;
 }
 
-export type GalleryImage = DbGalleryImage;
-export type Inquiry = DbInquiry;
-
 type CacheEntry = { data: unknown; expires: number };
 
 class Storage {
@@ -235,7 +232,8 @@ class Storage {
           await PerformanceMonitor.timeDbOperation('batchInsertInquiries', async () => {
             await db.transaction(async (tx) => {
               const insertData = batch.map(inquiry => ({
-                name: inquiry.name!,
+                firstName: inquiry.firstName || '',
+                lastName: inquiry.lastName || '',
                 email: inquiry.email!,
                 phone: inquiry.phone,
                 subject: inquiry.subject!,
@@ -282,23 +280,20 @@ class Storage {
           await PerformanceMonitor.timeDbOperation('batchInsertCustomers', async () => {
             await db.transaction(async (tx) => {
               const insertData = batch.map(customer => ({
-                name: customer.name,
+                firstName: customer.firstName || customer.name?.split(' ')[0] || '',
+                lastName: customer.lastName || customer.name?.split(' ').slice(1).join(' ') || '',
                 email: customer.email,
                 phone: customer.phone,
-                type: customer.type || 'lead',
+                customerType: customer.type || 'prospect',
                 source: customer.source,
-                leadScore: customer.leadScore || 50,
-                status: customer.status || 'new',
-                budgetMin: customer.budgetMin,
-                budgetMax: customer.budgetMax,
-                preferredLocations: customer.preferredLocations || [],
-                propertyTypes: customer.propertyTypes || [],
-                timeline: customer.timeline,
+                maxBudget: customer.budgetMax || customer.maxBudget,
+                minBudget: customer.budgetMin || customer.minBudget,
+                preferredLocations: JSON.stringify(customer.preferredLocations || []),
+                propertyTypes: JSON.stringify(customer.propertyTypes || []),
                 address: customer.address,
                 occupation: customer.occupation,
-                company: customer.company,
                 notes: customer.notes,
-                tags: customer.tags || []
+                tags: JSON.stringify(customer.tags || [])
               }));
 
               await tx.insert(schema.customers).values(insertData);
@@ -481,7 +476,7 @@ class Storage {
     }
   }
 
-  async getProperty(id: string): Promise<Property | null> {
+  async getProperty(id: number): Promise<Property | null> {
     // Check cache first
     const cacheKey = `property_${id}`;
     const cached = this.getFromCache<Property | null>(cacheKey);
@@ -520,7 +515,7 @@ class Storage {
     return this.mapProperty(property);
   }
 
-  async updateProperty(id: string, data: Partial<Property>): Promise<Property> {
+  async updateProperty(id: number, data: Partial<Property>): Promise<Property> {
     const propertyId = Number(id);
     if (Number.isNaN(propertyId)) {
       throw new Error(`Ungültige Immobilien-ID: ${id}`);
@@ -548,7 +543,7 @@ class Storage {
     return this.mapProperty(property);
   }
 
-  async deleteProperty(id: string): Promise<void> {
+  async deleteProperty(id: number): Promise<void> {
     await db.update(schema.properties)
       .set({ status: 'deleted' })
       .where(eq(schema.properties.id, id));
@@ -609,7 +604,7 @@ class Storage {
     }
   }
 
-  async getGalleryImage(id: string): Promise<GalleryImage | null> {
+  async getGalleryImage(id: number): Promise<GalleryImage | null> {
     try {
       const [image] = await db.select()
         .from(schema.galleryImages)
@@ -646,7 +641,7 @@ class Storage {
     return this.mapGalleryImage(image);
   }
 
-  async updateGalleryImage(id: string, data: {
+  async updateGalleryImage(id: number, data: {
     alt?: string;
     category?: string;
     propertyId?: string;
@@ -663,7 +658,7 @@ class Storage {
     return this.mapGalleryImage(updatedImage);
   }
 
-  async deleteGalleryImage(id: string): Promise<void> {
+  async deleteGalleryImage(id: number): Promise<void> {
     await db.delete(schema.galleryImages)
       .where(eq(schema.galleryImages.id, id));
   }
@@ -702,7 +697,8 @@ class Storage {
         if (search) {
           const searchTerm = `%${search}%`;
           whereConditions.push(
-            sql`${schema.inquiries.name} ILIKE ${searchTerm} OR 
+            sql`${schema.inquiries.firstName} ILIKE ${searchTerm} OR 
+                ${schema.inquiries.lastName} ILIKE ${searchTerm} OR 
                 ${schema.inquiries.subject} ILIKE ${searchTerm} OR 
                 ${schema.inquiries.message} ILIKE ${searchTerm} OR
                 ${schema.inquiries.email} ILIKE ${searchTerm}`
@@ -745,7 +741,8 @@ class Storage {
   async createInquiry(data: Partial<Inquiry>): Promise<Inquiry> {
     const [inquiry] = await db.insert(schema.inquiries)
       .values({
-        name: data.name!,
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
         email: data.email!,
         phone: data.phone,
         subject: data.subject!,
@@ -875,18 +872,21 @@ class Storage {
       const whereConditions = [];
 
       if (type) {
-        whereConditions.push(eq(schema.customers.type, type));
+        whereConditions.push(eq(schema.customers.customerType, type));
       }
-      if (status) {
-        whereConditions.push(eq(schema.customers.status, status));
-      }
-      if (assignedAgent) {
-        whereConditions.push(eq(schema.customers.assignedAgent, assignedAgent));
-      }
+      // status field doesn't exist in customers schema
+      // if (status) {
+      //   whereConditions.push(eq(schema.customers.status, status));
+      // }
+      // assignedAgent field doesn't exist in customers schema  
+      // if (assignedAgent) {
+      //   whereConditions.push(eq(schema.customers.assignedAgent, assignedAgent));
+      // }
       if (search) {
         whereConditions.push(
           sql`(
-            ${schema.customers.name} ILIKE ${`%${search}%`} OR 
+            ${schema.customers.firstName} ILIKE ${`%${search}%`} OR 
+            ${schema.customers.lastName} ILIKE ${`%${search}%`} OR 
             ${schema.customers.email} ILIKE ${`%${search}%`} OR
             ${schema.customers.phone} ILIKE ${`%${search}%`}
           )`
@@ -953,7 +953,7 @@ class Storage {
   }
 
   // Get single customer with related data
-  async getCustomer(id: string) {
+  async getCustomer(id: number) {
     try {
       const [customer] = await db.select()
         .from(schema.customers)
@@ -968,7 +968,7 @@ class Storage {
   }
 
   // Update customer
-  async updateCustomer(id: string, data: any) {
+  async updateCustomer(id: number, data: any) {
     try {
       const [customer] = await db.update(schema.customers)
         .set({
@@ -986,7 +986,7 @@ class Storage {
   }
 
   // Delete customer
-  async deleteCustomer(id: string) {
+  async deleteCustomer(id: number) {
     try {
       await db.delete(schema.customers)
         .where(eq(schema.customers.id, id));
@@ -1976,7 +1976,7 @@ class Storage {
     };
   }
 
-  private mapGalleryImage(row: DbGalleryImage): GalleryImage {
+  private mapGalleryImage(row: any): GalleryImage {
     return {
       ...row,
       url: (row as Record<string, unknown>).url ?? `/api/gallery/${row.id}/image`,
@@ -1984,7 +1984,7 @@ class Storage {
     } as GalleryImage;
   }
 
-  private mapInquiry(row: DbInquiry): Inquiry {
+  private mapInquiry(row: any): Inquiry {
     return {
       ...row,
       createdAt: this.toIsoString(row.createdAt)

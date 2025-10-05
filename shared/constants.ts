@@ -90,51 +90,55 @@ export function validateProbability(value: number): number {
 }
 
 // Property and Location Constants
-export const PROPERTY_TYPES = {
-  HOUSE: 'house',
-  APARTMENT: 'apartment',
-  COMMERCIAL: 'commercial',
-  LAND: 'land'
-} as const;
+export const PROPERTY_TYPES = [
+  { value: 'house', label: 'Haus' },
+  { value: 'apartment', label: 'Wohnung' },
+  { value: 'commercial', label: 'Gewerbe' },
+  { value: 'land', label: 'Grundstück' }
+] as const;
 
-export const PROPERTY_CONDITIONS = {
-  NEW: 'new',
-  RENOVATED: 'renovated',
-  GOOD: 'good',
-  NEEDS_RENOVATION: 'needs_renovation'
-} as const;
+export const PROPERTY_CONDITIONS = [
+  { value: 'new', label: 'Neubau' },
+  { value: 'renovated', label: 'Renoviert' },
+  { value: 'good', label: 'Guter Zustand' },
+  { value: 'needs_renovation', label: 'Renovierungsbedürftig' }
+] as const;
+
+export const PROPERTY_FEATURES = [
+  'Balkon',
+  'Terrasse',
+  'Garten',
+  'Garage',
+  'Stellplatz',
+  'Keller',
+  'Aufzug',
+  'Barrierefrei',
+  'Einbauküche',
+  'Fußbodenheizung',
+  'Kamin',
+  'Klimaanlage',
+  'Smart Home',
+  'Alarmanlage',
+  'Gäste-WC'
+] as const;
 
 export const BODENSEE_CITIES = [
-  'friedrichshafen',
-  'konstanz',
-  'uberlingen',
-  'meersburg',
-  'markdorf',
-  'tettnang'
+  { value: 'friedrichshafen', label: 'Friedrichshafen' },
+  { value: 'konstanz', label: 'Konstanz' },
+  { value: 'uberlingen', label: 'Überlingen' },
+  { value: 'meersburg', label: 'Meersburg' },
+  { value: 'markdorf', label: 'Markdorf' },
+  { value: 'tettnang', label: 'Tettnang' }
 ] as const;
 
 export const ALL_CITIES = BODENSEE_CITIES;
 
 export function getCityLabel(citySlug: string): string {
-  const labels: Record<string, string> = {
-    'friedrichshafen': 'Friedrichshafen',
-    'konstanz': 'Konstanz',
-    'uberlingen': 'Überlingen',
-    'meersburg': 'Meersburg',
-    'markdorf': 'Markdorf',
-    'tettnang': 'Tettnang'
-  };
-  return labels[citySlug] || citySlug;
+  const city = BODENSEE_CITIES.find(c => c.value === citySlug);
+  return city?.label || citySlug;
 }
 
 export function getCitySlug(cityLabel: string): string {
-  const slugs: Record<string, string> = {
-    'Friedrichshafen': 'friedrichshafen',
-    'Konstanz': 'konstanz',
-    'Überlingen': 'uberlingen',
-    'Meersburg': 'meersburg',
-    'Markdorf': 'markdorf',
-    'Tettnang': 'tettnang'
-  };
-  return slugs[cityLabel] || cityLabel.toLowerCase();
+  const city = BODENSEE_CITIES.find(c => c.label === cityLabel);
+  return city?.value || cityLabel.toLowerCase();
 }

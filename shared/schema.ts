@@ -65,8 +65,11 @@ export const galleryImages = sqliteTable('gallery_images', {
   propertyId: integer('property_id').references(() => properties.id, { onDelete: 'cascade' }),
   filename: text('filename').notNull(),
   originalName: text('original_name'),
+  url: text('url'),
   alt: text('alt'),
   caption: text('caption'),
+  category: text('category').default('general'),
+  size: integer('size'),
   sortOrder: integer('sort_order').default(0),
   isPrimary: integer('is_primary', { mode: 'boolean' }).default(false),
   imageType: text('image_type').default('standard'), // 'standard', '360', 'floor_plan'
@@ -91,6 +94,7 @@ export const inquiries = sqliteTable('inquiries', {
   
   // Status and handling
   status: text('status').notNull().default('new'), // 'new', 'contacted', 'resolved', 'closed'
+  priority: text('priority').default('medium'), // 'low', 'medium', 'high', 'urgent'
   isRead: integer('is_read', { mode: 'boolean' }).default(false),
   assignedTo: integer('assigned_to').references(() => users.id),
   
@@ -400,6 +404,7 @@ export const insertDesignSettingsSchema = z.object({
 // Export types for compatibility
 export type User = typeof users.$inferSelect;
 export type Property = typeof properties.$inferSelect;
+export type GalleryImage = typeof galleryImages.$inferSelect;
 export type Inquiry = typeof inquiries.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
@@ -412,8 +417,11 @@ export type DesignSettings = typeof designSettings.$inferSelect;
 export type SiteContent = typeof siteContent.$inferSelect;
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
 export type Newsletter = typeof newsletters.$inferSelect;
+export type CustomerInteraction = typeof customerInteractions.$inferSelect;
+export type CustomerSegment = typeof customerSegments.$inferSelect;
 
 export type InsertProperty = typeof properties.$inferInsert;
+export type InsertGalleryImage = typeof galleryImages.$inferInsert;
 export type InsertInquiry = typeof inquiries.$inferInsert;
 export type InsertCustomer = typeof customers.$inferInsert;
 export type InsertLead = typeof leads.$inferInsert;
@@ -421,3 +429,5 @@ export type InsertAppointment = typeof appointments.$inferInsert;
 export type InsertCalendarConnection = typeof calendarConnections.$inferInsert;
 export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
 export type InsertCalendarSyncLog = typeof calendarSyncLogs.$inferInsert;
+export type InsertCustomerInteraction = typeof customerInteractions.$inferInsert;
+export type InsertCustomerSegment = typeof customerSegments.$inferInsert;

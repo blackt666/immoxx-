@@ -8,8 +8,7 @@ import {
 import { eq, and, isNull, ne, or, gte, lte } from 'drizzle-orm';
 import type { 
   CalendarConnection, 
-  Appointment,
-  InsertCalendarSyncLog 
+  Appointment
 } from '@shared/schema';
 import { googleCalendarService } from './googleCalendarService.js';
 import { appleCalendarService } from './appleCalendarService.js';
@@ -28,6 +27,43 @@ function getErrorMessage(error: unknown): string {
 
 
 
+// Type definitions
+type SyncDirection = 'crm_to_calendar' | 'calendar_to_crm';
+
+interface CalendarEventData {
+  id?: string | null;
+  uid?: string;
+  summary?: string | null;
+  description?: string | null;
+  start?: { dateTime?: string } | null;
+  end?: { dateTime?: string } | null;
+  [key: string]: unknown;
+}
+
+interface SyncStats {
+  totalOperations: number;
+  successful: number;
+  failed: number;
+  skipped: number;
+  byOperation: {
+    create: number;
+    update: number;
+    delete: number;
+    sync: number;
+  };
+  byDirection: {
+    crmToCalendar: number;
+    calendarToCrm: number;
+  };
+  lastSync: Date | null;
+  recentErrors: Array<{
+    date: Date;
+    operation: string;
+    status: string;
+    message: string | null;
+  }>;
+}
+
 interface SyncResult {
   success: boolean;
   created: number;
@@ -45,12 +81,6 @@ interface SyncOptions {
   };
   forceSync?: boolean; // Skip change detection
   dryRun?: boolean; // Only log what would be done
-}
-
-interface ConflictResolution {
-  strategy: 'crm_wins' | 'calendar_wins' | 'newest_wins' | 'manual';
-  resolvedBy?: string; // agent ID for manual resolution
-  resolvedAt?: Date;
 }
 
 export class CalendarSyncService {
@@ -74,13 +104,9 @@ export class CalendarSyncService {
         .select()
         .from(calendarConnections)
         .where(
-          and(
-            eq(calendarConnections.agentId, agentId),
-            eq(calendarConnections.isActive, true),
-            ne(calendarConnections.syncStatus, 'disconnected')
-          )
+          eq(calendarConnections.agentId, agentId.toString())
         );
-
+      
       if (connections.length === 0) {
         console.log(`No active calendar connections found for agent: ${agentId}`);
         return results;
@@ -118,7 +144,6 @@ export class CalendarSyncService {
     connection: CalendarConnection, 
     options: SyncOptions = {}
   ): Promise<SyncResult> {
-    const startTime = Date.now();
     const result: SyncResult = {
       success: false,
       created: 0,
@@ -214,15 +239,8 @@ export class CalendarSyncService {
         connection.id,
         null,
         'sync',
-        direction as any,
+        direction as SyncDirection,
         result.success ? 'success' : 'error',
-        {
-          direction,
-          timeRange,
-          result,
-          duration: Date.now() - startTime,
-          hasTokenErrors
-        },
         result.errors.join('; ') || undefined
       );
 
@@ -253,12 +271,8 @@ export class CalendarSyncService {
         'sync',
         'crm_to_calendar',
         'error',
-        { 
-          duration: Date.now() - startTime,
-          tokenError: this.isTokenError(error)
-        },
         getErrorMessage(error),
-        { error: getErrorMessage(error) }
+        getErrorMessage(error)
       );
 
       return result;
@@ -360,17 +374,23 @@ export class CalendarSyncService {
       for (const calendarEvent of externalCalendarEvents) {
         try {
           // Skip events that are already synced from CRM
+          const eventId = calendarEvent.id || calendarEvent.uid;
+          if (!eventId) {
+            result.skipped++;
+            continue;
+          }
+          
           const existingCalendarEvent = await db
             .select()
             .from(calendarEvents)
             .where(
               and(
                 eq(calendarEvents.calendarConnectionId, connection.id),
-                eq(calendarEvents.externalId, calendarEvent.id || calendarEvent.uid)
+                eq(calendarEvents.externalId, eventId)
               )
             );
 
-          if (existingCalendarEvent.length > 0 && (existingCalendarEvent[0] as any).appointmentId) {
+          if (existingCalendarEvent.length > 0 && existingCalendarEvent[0].appointmentId) {
             // This event originated from CRM, skip to avoid sync loops
             result.skipped++;
             continue;
@@ -432,7 +452,7 @@ export class CalendarSyncService {
             isNull(appointments.googleCalendarEventId),
             eq(appointments.calendarSyncStatus, 'error'),
             eq(appointments.calendarSyncStatus, 'pending')
-          ) as any
+          )!
         );
       } else if (provider === 'apple') {
         conditions.push(
@@ -440,7 +460,7 @@ export class CalendarSyncService {
             isNull(appointments.appleCalendarEventId),
             eq(appointments.calendarSyncStatus, 'error'),
             eq(appointments.calendarSyncStatus, 'pending')
-          ) as any
+          )!
         );
       }
     }
@@ -507,7 +527,7 @@ export class CalendarSyncService {
     if (connection.provider === 'google') {
       await googleCalendarService.updateEvent(connection, appointment, eventId);
     } else if (connection.provider === 'apple') {
-      await appleCalendarService.updateEvent(connection, appointment, eventId);
+      await appleCalendarService.updateEvent(connection, eventId, appointment);
     } else {
       throw new Error(`Unsupported calendar provider: ${connection.provider}`);
     }
@@ -527,7 +547,7 @@ export class CalendarSyncService {
     }
 
     if (connection.provider === 'google') {
-      await googleCalendarService.deleteEvent(connection, eventId, appointment.id);
+      await googleCalendarService.deleteEvent(connection, eventId, appointment.id.toString());
     } else if (connection.provider === 'apple') {
       await appleCalendarService.deleteEvent(connection, eventId, appointment.id);
     } else {
@@ -541,9 +561,10 @@ export class CalendarSyncService {
   private async getCalendarEvents(
     connection: CalendarConnection,
     timeRange: { start: Date; end: Date }
-  ): Promise<any[]> {
+  ): Promise<CalendarEventData[]> {
     if (connection.provider === 'google') {
-      return await googleCalendarService.getEvents(connection, timeRange.start, timeRange.end);
+      const events = await googleCalendarService.getEvents(connection, timeRange.start, timeRange.end);
+      return events as CalendarEventData[];
     } else if (connection.provider === 'apple') {
       return await appleCalendarService.getEvents(connection, timeRange.start, timeRange.end);
     } else {
@@ -554,9 +575,9 @@ export class CalendarSyncService {
   /**
    * Check if a calendar event is related to CRM appointments
    */
-  private isAppointmentRelatedEvent(event: any): boolean {
-    const description = event.description || '';
-    const summary = event.summary || event.title || '';
+  private isAppointmentRelatedEvent(event: CalendarEventData): boolean {
+    const description = typeof event.description === 'string' ? event.description : '';
+    const summary = typeof event.summary === 'string' ? event.summary : (typeof event.title === 'string' ? event.title : '');
     
     // Check for CRM signature in description
     if (description.includes('Bodensee Immobilien Müller CRM')) {
@@ -569,9 +590,11 @@ export class CalendarSyncService {
       'property viewing', 'consultation', 'valuation', 'contract signing'
     ];
 
-    return appointmentKeywords.some(keyword => 
-      summary.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
-    );
+    return appointmentKeywords.some(keyword => {
+      const summaryMatch = summary.toLowerCase().includes(keyword);
+      const descriptionMatch = description.toLowerCase().includes(keyword);
+      return summaryMatch || descriptionMatch;
+    });
   }
 
   /**
@@ -610,8 +633,11 @@ export class CalendarSyncService {
   /**
    * Check if error is token-related
    */
-  private isTokenError(error: any): boolean {
+  private isTokenError(error: unknown): boolean {
     const errorMessage = getErrorMessage(error).toLowerCase();
+    const hasStatusCode = error && typeof error === 'object' && 'status' in error;
+    const status = hasStatusCode ? (error as { status: number }).status : null;
+    
     return (
       errorMessage.includes('token') ||
       errorMessage.includes('authentication') ||
@@ -619,8 +645,8 @@ export class CalendarSyncService {
       errorMessage.includes('unauthorized') ||
       errorMessage.includes('forbidden') ||
       errorMessage.includes('invalid_grant') ||
-      error.status === 401 ||
-      error.status === 403
+      status === 401 ||
+      status === 403
     );
   }
 
@@ -654,7 +680,7 @@ export class CalendarSyncService {
         .from(calendarConnections)
         .where(
           and(
-            eq(calendarConnections.agentId, appointment.agentId),
+            eq(calendarConnections.agentId, appointment.agentId?.toString() || ''),
             eq(calendarConnections.isActive, true),
             ne(calendarConnections.syncStatus, 'disconnected')
           )
@@ -706,10 +732,11 @@ export class CalendarSyncService {
 
       // Group connections by agent for more efficient syncing
       const connectionsByAgent = autoSyncConnections.reduce((acc, connection) => {
-        if (!acc[connection.agentId]) {
-          acc[connection.agentId] = [];
+        const agentId = connection.agentId || 'unknown';
+        if (!acc[agentId]) {
+          acc[agentId] = [];
         }
-        acc[connection.agentId].push(connection);
+        acc[agentId].push(connection);
         return acc;
       }, {} as { [agentId: string]: CalendarConnection[] });
 
@@ -741,23 +768,17 @@ export class CalendarSyncService {
     operation: 'create' | 'update' | 'delete' | 'sync',
     direction: 'crm_to_calendar' | 'calendar_to_crm',
     status: 'success' | 'error' | 'skipped',
-    dataSnapshot: unknown = null,
     errorMessage?: string,
-    errorDetails?: unknown,
-    duration = 0
+    errorDetails?: unknown
   ): Promise<void> {
     try {
-      const logData: InsertCalendarSyncLog = {
-        connectionId,
-        appointmentId,
-        operation,
-        direction,
+      const logData = {
+        calendarConnectionId: connectionId,
+        syncType: operation,
         status,
-        dataSnapshot,
-        errorMessage,
-        errorDetails,
-        completedAt: new Date(),
-        duration,
+        message: errorMessage || null,
+        errorDetails: errorDetails ? String(errorDetails) : null,
+        operation,
       };
 
       await db.insert(calendarSyncLogs).values(logData);
@@ -769,7 +790,7 @@ export class CalendarSyncService {
   /**
    * Get sync statistics for a connection
    */
-  async getSyncStats(connectionId: string, days = 30): Promise<any> {
+  async getSyncStats(connectionId: number, days = 30): Promise<SyncStats> {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     const logs = await db
@@ -794,18 +815,18 @@ export class CalendarSyncService {
         sync: logs.filter(log => log.operation === 'sync').length,
       },
       byDirection: {
-        crmToCalendar: logs.filter(log => log.direction === 'crm_to_calendar').length,
-        calendarToCrm: logs.filter(log => log.direction === 'calendar_to_crm').length,
+        crmToCalendar: logs.filter(log => log.syncType === 'export').length,
+        calendarToCrm: logs.filter(log => log.syncType === 'import').length,
       },
       lastSync: logs.length > 0 ? logs[logs.length - 1].startedAt : null,
       recentErrors: logs
         .filter(log => log.status === 'error')
         .slice(-5)
         .map(log => ({
-          operation: log.operation,
-          direction: log.direction,
-          error: log.errorMessage,
-          timestamp: log.startedAt,
+          date: log.createdAt,
+          operation: log.operation || 'unknown',
+          status: log.status,
+          message: log.errorDetails,
         })),
     };
 

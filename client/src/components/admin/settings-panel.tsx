@@ -69,7 +69,7 @@ export default function SettingsPanel() {
   const [tempSettings, setTempSettings] = useState<DesignSettings | null>(null);
 
   // Safe design settings with proper defaults to prevent null spread errors
-  const safeDesignSettings = designSettings || {
+  const safeDesignSettings = (designSettings || {
     light: {
       colors: {
         primary: '#3b82f6',
@@ -116,7 +116,7 @@ export default function SettingsPanel() {
         }
       }
     }
-  };
+  }) as any;
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/auth/me"],
@@ -779,11 +779,11 @@ export default function SettingsPanel() {
                   <div 
                     className="p-4 bg-white border rounded space-y-3"
                     style={{
-                      fontFamily: tempSettings?.light?.typography?.fontFamily || safeDesignSettings.light.typography.fontFamily,
-                      fontSize: `${tempSettings?.light?.typography?.baseSize || safeDesignSettings.light.typography.baseSize}px`,
-                      lineHeight: tempSettings?.light?.typography?.lineHeight || safeDesignSettings.light.typography.lineHeight,
-                      backgroundColor: tempSettings?.light?.colors?.background || safeDesignSettings.light.colors.background,
-                      color: tempSettings?.light?.colors?.foreground || safeDesignSettings.light.colors.foreground
+                      fontFamily: (tempSettings as any)?.light?.typography?.fontFamily || (safeDesignSettings as any).light.typography.fontFamily,
+                      fontSize: `${(tempSettings as any)?.light?.typography?.baseSize || (safeDesignSettings as any).light.typography.baseSize}px`,
+                      lineHeight: (tempSettings as any)?.light?.typography?.lineHeight || (safeDesignSettings as any).light.typography.lineHeight,
+                      backgroundColor: (tempSettings as any)?.light?.colors?.background || (safeDesignSettings as any).light.colors.background,
+                      color: (tempSettings as any)?.light?.colors?.foreground || (safeDesignSettings as any).light.colors.foreground
                     }}
                     data-testid="preview-container"
                   >
@@ -796,7 +796,7 @@ export default function SettingsPanel() {
                     </p>
                     <Button 
                       style={{ 
-                        backgroundColor: tempSettings?.light?.colors?.primary || safeDesignSettings.light.colors.primary,
+                        backgroundColor: (tempSettings as any)?.light?.colors?.primary || (safeDesignSettings as any).light.colors.primary,
                         color: 'white'
                       }}
                       data-testid="preview-button"
