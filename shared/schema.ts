@@ -7,19 +7,13 @@ import {
 } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
-// User authentication and administration
+// User authentication and administration - Matches actual DB structure
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   username: text('username').notNull().unique(),
-  email: text('email').notNull().unique(),
   password: text('password').notNull(),
-  passwordHash: text('password_hash'),
-  name: text('name').notNull(),
-  role: text('role').notNull().default('admin'),
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-  lastLoginAt: integer('last_login_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+  role: text('role').notNull().default('user'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
 });
 
 // Property listings and real estate data
@@ -263,6 +257,58 @@ export const rateLimitEntries = sqliteTable('rate_limit_entries', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
 });
 
+// Design Settings
+export const designSettings = sqliteTable('design_settings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  theme: text('theme').notNull().default('bodensee'),
+  primaryColor: text('primary_color').default('#566B73'),
+  accentColor: text('accent_color').default('#6585BC'),
+  fontFamily: text('font_family').default('system-ui'),
+  logoUrl: text('logo_url'),
+  faviconUrl: text('favicon_url'),
+  customCss: text('custom_css'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
+// Site Content
+export const siteContent = sqliteTable('site_content', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  section: text('section').notNull().unique(),
+  title: text('title'),
+  content: text('content'),
+  language: text('language').default('de'),
+  published: integer('published', { mode: 'boolean' }).default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
+// Newsletter Subscribers
+export const newsletterSubscribers = sqliteTable('newsletter_subscribers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull().unique(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  status: text('status').notNull().default('active'),
+  subscribedAt: integer('subscribed_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  unsubscribedAt: integer('unsubscribed_at', { mode: 'timestamp' }),
+  source: text('source').default('website'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
+// Newsletters
+export const newsletters = sqliteTable('newsletters', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  subject: text('subject').notNull(),
+  content: text('content').notNull(),
+  status: text('status').notNull().default('draft'),
+  sentAt: integer('sent_at', { mode: 'timestamp' }),
+  recipientCount: integer('recipient_count').default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
 // Zod schemas for validation
 import { z } from 'zod';
 
@@ -279,6 +325,35 @@ export const leadSchema = z.object({
   assignedTo: z.number().int().positive().optional()
 });
 
+export const insertPropertySchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  type: z.string(),
+  price: z.number().positive(),
+  location: z.string(),
+  city: z.string()
+});
+
+export const insertCustomerSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email().optional(),
+  phone: z.string().optional()
+});
+
+export const insertInquirySchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email(),
+  message: z.string().min(1)
+});
+
+export const insertDesignSettingsSchema = z.object({
+  theme: z.string(),
+  primaryColor: z.string().optional(),
+  accentColor: z.string().optional()
+});
+
 // Export types for compatibility
 export type User = typeof users.$inferSelect;
 export type Property = typeof properties.$inferSelect;
@@ -290,3 +365,7 @@ export type CalendarConnection = typeof calendarConnections.$inferSelect;
 export type CalendarEvent = typeof calendarEvents.$inferSelect;
 export type CalendarSyncLog = typeof calendarSyncLogs.$inferSelect;
 export type RateLimitEntry = typeof rateLimitEntries.$inferSelect;
+export type DesignSettings = typeof designSettings.$inferSelect;
+export type SiteContent = typeof siteContent.$inferSelect;
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+export type Newsletter = typeof newsletters.$inferSelect;

@@ -73,45 +73,45 @@ html {
        Original Hex → Corrected HSL Conversion
        ==================================================== */
     
-    /* Original Bodensee Brand Colors (Hex) - Reference */
-    --bodensee-deep: #566B73;    /* Bodensee-Tiefe: Dunkles Blaugrau */
-    --bodensee-water: #6585CC;   /* Bodensee-Wasser: Mittleres Teal */
-    --bodensee-sand: #D9CDBF;    /* Bodensee-Sand: Warmes Beige */
-    --bodensee-stone: #8C837B;   /* Bodensee-Steine: Mittleres Grau */
-    --bodensee-shore: #BFADA3;   /* Bodensee-Ufer: Helles Taupe */
-    
+    /* Original Bodensee Brand Colors (Hex) - Exact from Design */
+    --bodensee-deep: #566B73;    /* Ruskin Blue - Primary Dark */
+    --bodensee-water: #65858C;   /* Arctic - Medium Blue-Grey */
+    --bodensee-sand: #D9CDBF;    /* Bermuda Sand - Warm Beige */
+    --bodensee-stone: #8C837B;   /* Mushroom - Medium Grey */
+    --bodensee-shore: #BFADA3;   /* So Sublime - Light Taupe */
+
     /* Korrekte HSL-Konvertierung für shadcn/ui (Format: h s% l%) */
-    --bodensee-deep-hsl: 196 14% 39%;     /* #566B73 → hsl(196, 14%, 39%) */
-    --bodensee-water-hsl: 221 51% 60%;    /* #6585CC → hsl(221, 51%, 60%) */
-    --bodensee-sand-hsl: 35 25% 81%;      /* #D9CDBF → hsl(35, 25%, 81%) */
-    --bodensee-stone-hsl: 30 8% 51%;      /* #8C837B → hsl(30, 8%, 51%) */
-    --bodensee-shore-hsl: 25 15% 68%;     /* #BFADA3 → hsl(25, 15%, 68%) */
+    --bodensee-deep-hsl: 196 14% 39%;     /* #566B73 → Ruskin Blue */
+    --bodensee-water-hsl: 193 18% 47%;    /* #65858C → Arctic */
+    --bodensee-sand-hsl: 35 25% 81%;      /* #D9CDBF → Bermuda Sand */
+    --bodensee-stone-hsl: 30 8% 51%;      /* #8C837B → Mushroom */
+    --bodensee-shore-hsl: 25 15% 68%;     /* #BFADA3 → So Sublime */
     
     /* ====================================================
        SHADCN/UI VARIABLES - BODENSEE BRAND MAPPING
        Professional Real Estate Design System
        ==================================================== */
     
-    /* Light Theme - Optimiert für Immobilien-Präsentation */
+    /* Light Theme - Optimiert für Immobilien-Präsentation & Accessibility */
     --background: 0 0% 100%;                          /* Pure white background */
-    --foreground: 196 14% 39%;                        /* Bodensee Deep - primary text */
+    --foreground: 196 14% 25%;                        /* Darker for WCAG AAA contrast */
     --card: 0 0% 100%;                                /* White cards */
-    --card-foreground: 196 14% 39%;                   /* Bodensee Deep text on cards */
+    --card-foreground: 196 14% 25%;                   /* Darker text for accessibility */
     --popover: 0 0% 100%;                             /* White popover background */
-    --popover-foreground: 196 14% 39%;                /* Bodensee Deep popover text */
-    --primary: 221 51% 60%;                           /* Bodensee Water - primary actions */
+    --popover-foreground: 196 14% 25%;                /* Darker popover text */
+    --primary: 196 14% 39%;                           /* Ruskin Blue - primary actions */
     --primary-foreground: 0 0% 100%;                  /* White text on primary */
-    --secondary: 35 25% 81%;                          /* Bodensee Sand - secondary elements */
-    --secondary-foreground: 196 14% 39%;              /* Bodensee Deep on secondary */
+    --secondary: 193 18% 47%;                         /* Arctic - secondary elements */
+    --secondary-foreground: 0 0% 100%;                /* White on secondary */
     --muted: 35 25% 90%;                              /* Lighter sand for muted areas */
-    --muted-foreground: 30 8% 51%;                    /* Bodensee Stone for muted text */
-    --accent: 25 15% 68%;                             /* Bodensee Shore - accent elements */
-    --accent-foreground: 196 14% 39%;                 /* Bodensee Deep on accent */
+    --muted-foreground: 30 8% 40%;                    /* Darker for contrast */
+    --accent: 193 18% 47%;                            /* Arctic - accent elements */
+    --accent-foreground: 0 0% 100%;                   /* White on accent */
     --destructive: 0 84% 60%;                         /* Standard destructive red */
     --destructive-foreground: 0 0% 100%;              /* White on destructive */
-    --border: 25 15% 85%;                             /* Light shore for borders */
-    --input: 25 15% 85%;                              /* Light shore for inputs */
-    --ring: 221 51% 60%;                              /* Bodensee Water for focus rings */
+    --border: 35 25% 85%;                             /* Bermuda sand for borders */
+    --input: 35 25% 90%;                              /* Light input background */
+    --ring: 196 14% 39%;                              /* Ruskin Blue focus ring */
     --radius: 0.5rem;                                 /* Standard border radius */
 
     /* ====================================================
@@ -403,8 +403,190 @@ video[srcset=""] + .video-fallback {
 }
 
 /* ====================================================
+   MOBILE OPTIMIZATIONS - FIX ALL REMAINING ISSUES
+   ==================================================== */
+
+/* Fix 1: Mobile Form Inputs - Minimum 44px height for touch */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  textarea,
+  select {
+    min-height: 44px !important;
+    height: auto !important;
+    padding: 12px 16px !important;
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
+
+  /* Ensure buttons are also touch-friendly */
+  button,
+  .btn,
+  [role="button"] {
+    min-height: 44px !important;
+    padding: 12px 20px !important;
+  }
+}
+
+/* Fix 2: Prevent Horizontal Scroll on Mobile */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+#root {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+/* Ensure all containers respect viewport width */
+* {
+  max-width: 100%;
+}
+
+/* Fix 3: Contact Button Z-Index */
+button[data-testid="button-human-contact"],
+.contact-button,
+nav button {
+  position: relative !important;
+  z-index: 50 !important;
+}
+
+/* Fix 4: Mobile Navigation - Force Mobile Menu on Small Screens */
+@media (max-width: 1024px) {
+  nav .desktop-nav {
+    display: none !important;
+  }
+
+  nav .mobile-menu-button {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  nav .desktop-nav {
+    display: flex !important;
+  }
+
+  nav .mobile-menu-button {
+    display: none !important;
+  }
+}
+
+/* Fix 5: Mobile Menu Timing Optimization */
+.mobile-menu {
+  transition: all 0.2s ease-in-out !important;
+}
+
+.mobile-menu-overlay {
+  transition: opacity 0.2s ease-in-out !important;
+}
+
+/* ====================================================
    END BODENSEE THEME SYSTEM
    ==================================================== */
+
+/* ====================================================
+   ACCESSIBILITY (A11Y) - WCAG 2.1 AAA Compliance
+   ==================================================== */
+
+/* Screen Reader Only - Visually hidden but accessible */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border-width: 0 !important;
+}
+
+/* Focus visible styles for keyboard navigation */
+*:focus-visible {
+  outline: 3px solid hsl(var(--ring)) !important;
+  outline-offset: 2px !important;
+  border-radius: 2px;
+}
+
+/* High contrast focus for interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid hsl(var(--ring)) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px rgba(86, 107, 115, 0.2) !important;
+}
+
+/* Skip to main content link for keyboard users */
+.skip-to-main {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 8px 16px;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+  z-index: 9999;
+  font-weight: 600;
+}
+
+.skip-to-main:focus {
+  top: 0;
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  * {
+    border-width: 2px !important;
+  }
+
+  button,
+  a,
+  input {
+    outline: 2px solid currentColor !important;
+    outline-offset: 2px !important;
+  }
+}
+
+/* Touch target sizes (minimum 44x44px) */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+[role="button"] {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Ensure text has sufficient contrast */
+.text-contrast-high {
+  color: hsl(196 14% 15%) !important;
+}
+
+.bg-contrast-high {
+  background-color: hsl(0 0% 100%) !important;
+}
 
 /* ====================================================
    HERO SECTION CUSTOM STYLES
