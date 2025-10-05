@@ -34,27 +34,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-      
-      const userData = await response.json();
-      setUser(userData);
-      sessionStorage.setItem('admin_user', JSON.stringify(userData));
-      
-      return { user: userData };
-    } catch (error) {
-      throw error;
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Login failed');
     }
+    
+    const data: AuthResponse = await response.json();
+    if (data.user) {
+      setUser(data.user);
+    }
+    return data;
   };
 
   const logout = async () => {

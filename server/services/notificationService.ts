@@ -45,7 +45,7 @@ export class NotificationService {
 
     // Initialisiere Transporter nur wenn SMTP konfiguriert ist
     if (emailConfig.host && emailConfig.auth.user && emailConfig.auth.pass) {
-      this.transporter = nodemailer.createTransporter(emailConfig);
+      this.transporter = nodemailer.createTransport(emailConfig);
       log.info('📧 Notification Service: E-Mail aktiviert');
     } else {
       log.warn('⚠️ Notification Service: E-Mail nicht konfiguriert (SMTP_* Env-Variablen fehlen)');

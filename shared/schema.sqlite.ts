@@ -56,6 +56,7 @@ export const properties = sqliteTable('properties', {
   slug: text('slug').unique(),
   metaTitle: text('meta_title'),
   metaDescription: text('meta_description'),
+  metadata: text('metadata'),
   
   // Timestamps
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),

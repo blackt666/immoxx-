@@ -46,7 +46,7 @@ export class CalendarService {
       return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     };
 
-    let icsContent = [
+    const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
       'PRODID:-//Bodensee Immobilien//CRM System//EN',
@@ -100,7 +100,7 @@ export class CalendarService {
       return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     };
 
-    let icsContent = [
+    const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
       'PRODID:-//Bodensee Immobilien//CRM System//EN',

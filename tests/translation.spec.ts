@@ -244,7 +244,7 @@ test.describe("Multilingual Translation System", () => {
     // Verify phone link format
     const firstPhoneLink = phoneLinks.first();
     const phoneHref = await firstPhoneLink.getAttribute("href");
-    expect(phoneHref).toMatch(/^tel:\+?[\d\s\-\/]+$/);
+    expect(phoneHref).toMatch(/^tel:\+?[\d\s-]+$/);
     
     // Verify email link format
     const firstEmailLink = emailLinks.first();
@@ -271,7 +271,7 @@ test.describe("Multilingual Translation System", () => {
     const phoneHrefEn = await phoneLinksEn.first().getAttribute("href");
     const emailHrefEn = await emailLinksEn.first().getAttribute("href");
     
-    expect(phoneHrefEn).toMatch(/^tel:\+?[\d\s\-\/]+$/);
+    expect(phoneHrefEn).toMatch(/^tel:\+?[\d\s-]+$/);
     expect(emailHrefEn).toMatch(/^mailto:.+@.+\..+$/);
     
     console.log("✅ Contact links functionality verification passed");

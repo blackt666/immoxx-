@@ -2,8 +2,7 @@ import {
   sqliteTable,
   text,
   integer,
-  real,
-  blob
+  real
 } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
@@ -52,6 +51,7 @@ export const properties = sqliteTable('properties', {
   slug: text('slug').unique(),
   metaTitle: text('meta_title'),
   metaDescription: text('meta_description'),
+  metadata: text('metadata'),
   
   // Timestamps
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
@@ -172,6 +172,7 @@ export const appointments = sqliteTable('appointments', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   customerId: integer('customer_id').references(() => customers.id, { onDelete: 'cascade' }),
   propertyId: integer('property_id').references(() => properties.id, { onDelete: 'set null' }),
+  agentId: integer('agent_id').references(() => users.id),
   title: text('title').notNull(),
   description: text('description'),
   startTime: integer('start_time', { mode: 'timestamp' }).notNull(),
@@ -189,6 +190,11 @@ export const appointments = sqliteTable('appointments', {
   notes: text('notes'),
   reminderSent: integer('reminder_sent', { mode: 'boolean' }).default(false),
   
+  // Calendar sync fields
+  googleCalendarEventId: text('google_calendar_event_id'),
+  appleCalendarEventId: text('apple_calendar_event_id'),
+  calendarSyncStatus: text('calendar_sync_status').default('pending'), // 'pending', 'synced', 'error'
+  
   // Assignment
   assignedTo: integer('assigned_to').references(() => users.id),
   
@@ -196,20 +202,54 @@ export const appointments = sqliteTable('appointments', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
 });
 
+// Customer Interactions
+export const customerInteractions = sqliteTable('customer_interactions', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    customerId: integer('customer_id').references(() => customers.id, { onDelete: 'cascade' }),
+    agentId: integer('agent_id').references(() => users.id),
+    type: text('type').notNull(), // 'email', 'phone', 'meeting', 'note'
+    subject: text('subject'),
+    content: text('content'),
+    interactionDate: integer('interaction_date', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
+// Customer Segments
+export const customerSegments = sqliteTable('customer_segments', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull().unique(),
+    description: text('description'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
+// Customer Segment Memberships (join table)
+export const customerSegmentMemberships = sqliteTable('customer_segment_memberships', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    customerId: integer('customer_id').references(() => customers.id, { onDelete: 'cascade' }),
+    segmentId: integer('segment_id').references(() => customerSegments.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
 // Calendar connections
 export const calendarConnections = sqliteTable('calendar_connections', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  agentId: text('agent_id'),
   provider: text('provider').notNull(), // 'google', 'apple', 'outlook'
   providerId: text('provider_id').notNull(),
   email: text('email').notNull(),
   name: text('name'),
+  calendarName: text('calendar_name'),
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
   tokenExpiresAt: integer('token_expires_at', { mode: 'timestamp' }),
   isActive: integer('is_active', { mode: 'boolean' }).default(true),
   lastSyncAt: integer('last_sync_at', { mode: 'timestamp' }),
   syncEnabled: integer('sync_enabled', { mode: 'boolean' }).default(true),
+  syncStatus: text('sync_status'),
+  syncError: text('sync_error'),
+  syncDirection: text('sync_direction'),
+  autoSync: integer('auto_sync', { mode: 'boolean' }).default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
 });
@@ -236,11 +276,14 @@ export const calendarEvents = sqliteTable('calendar_events', {
 export const calendarSyncLogs = sqliteTable('calendar_sync_logs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   calendarConnectionId: integer('calendar_connection_id').references(() => calendarConnections.id, { onDelete: 'cascade' }),
+  connectionId: integer('connection_id'),
   syncType: text('sync_type').notNull(), // 'import', 'export', 'update', 'delete'
   status: text('status').notNull(), // 'success', 'error', 'warning'
   message: text('message'),
   eventCount: integer('event_count').default(0),
   errorDetails: text('error_details'), // JSON string
+  operation: text('operation'),
+  startedAt: integer('started_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
 });
 
@@ -369,3 +412,12 @@ export type DesignSettings = typeof designSettings.$inferSelect;
 export type SiteContent = typeof siteContent.$inferSelect;
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
 export type Newsletter = typeof newsletters.$inferSelect;
+
+export type InsertProperty = typeof properties.$inferInsert;
+export type InsertInquiry = typeof inquiries.$inferInsert;
+export type InsertCustomer = typeof customers.$inferInsert;
+export type InsertLead = typeof leads.$inferInsert;
+export type InsertAppointment = typeof appointments.$inferInsert;
+export type InsertCalendarConnection = typeof calendarConnections.$inferInsert;
+export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
+export type InsertCalendarSyncLog = typeof calendarSyncLogs.$inferInsert;

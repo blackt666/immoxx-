@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, X, ArrowRight, Building, MessageSquare, Image, Mail, Settings, LayoutDashboard, Edit, Link, Activity, Target, FileText, BarChart3, Users, Calendar } from "lucide-react";
+import { Search, X, ArrowRight, Building, MessageSquare, Image, Mail, Settings, LayoutDashboard, Edit, Link, Activity, Target, FileText, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 
 interface SearchResult {
   id: string;
@@ -242,7 +241,7 @@ export default function DashboardSearch({ onTabChange, isOpen, onClose }: Dashbo
           ) : searchResults.length === 0 ? (
             <div className="p-6 text-center text-gray-500">
               <p className="text-lg mb-2">Keine Ergebnisse gefunden</p>
-              <p className="text-sm">Versuchen Sie andere Suchbegriffe wie 'Immobilien', 'Kunden' oder 'Einstellungen'.</p>
+              <p className="text-sm">Versuchen Sie andere Suchbegriffe wie &apos;Immobilien&apos;, &apos;Kunden&apos; oder &apos;Einstellungen&apos;.</p>
             </div>
           ) : (
             <div className="p-2">

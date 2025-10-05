@@ -1,35 +1,56 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  FileText, 
   Home, 
   Star, 
-  Mail, 
   Phone,
-  MapPin,
   Copy,
   Eye
 } from 'lucide-react';
+
+interface HeroContent {
+  title: string;
+  subtitle: string;
+  ctaText: string;
+  backgroundImage: string;
+}
+
+interface AboutContent {
+  title?: string;
+  description: string;
+  experience: string;
+  sales: string;
+}
+
+interface ContactContent {
+  title?: string;
+  phone: string;
+  mobile: string;
+  email: string;
+  address: string;
+  hours: string;
+}
+
+interface DownloadContent {
+  hero?: HeroContent;
+  about?: AboutContent;
+  contact?: ContactContent;
+}
 
 interface Template {
   id: string;
   name: string;
   category: string;
   description: string;
-  content: {
-    hero?: any;
-    about?: any;
-    contact?: any;
-  };
+  content: DownloadContent;
   preview: string;
-  downloadContent: any; // Actual content structure for download
+  downloadContent: DownloadContent;
 }
 
 // Generate consistent preview from download content
-const generatePreviewFromDownload = (downloadContent: any): string => {
+const generatePreviewFromDownload = (downloadContent: DownloadContent): string => {
   let preview = '';
 
   if (downloadContent.hero) {

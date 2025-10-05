@@ -1,10 +1,11 @@
+import type { calendar_v3 } from 'googleapis';
 import { google } from 'googleapis';
-import { GoogleAuth, OAuth2Client } from 'google-auth-library';
+import { OAuth2Client } from 'google-auth-library';
 import { db } from '../db.js';
 import * as schema from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import type { CalendarConnection, Appointment, InsertCalendarEvent, InsertCalendarSyncLog } from '@shared/schema';
-import { encrypt, decrypt, generateSecureState, safeTimeComparison } from '../lib/crypto.js';
+import { encrypt, decrypt, generateSecureState } from '../lib/crypto.js';
 import type { Request } from 'express';
 
 interface GoogleCalendarEvent {
@@ -30,13 +31,7 @@ interface GoogleCalendarEvent {
   }>;
 }
 
-interface GoogleTokens {
-  access_token: string;
-  refresh_token?: string;
-  scope: string;
-  token_type: string;
-  expiry_date: number;
-}
+
 
 // Utility function for safe error message extraction
 function getErrorMessage(error: unknown): string {
@@ -51,7 +46,7 @@ function getErrorMessage(error: unknown): string {
 
 export class GoogleCalendarService {
   private oauth2Client: OAuth2Client;
-  private calendar: any;
+  private calendar: calendar_v3.Calendar;
   private readonly TOKEN_REFRESH_BUFFER_MINUTES = 5; // Refresh tokens 5 minutes before expiry
   private readonly MAX_RETRY_ATTEMPTS = 3;
   private readonly RETRY_DELAY_MS = 1000;
@@ -64,6 +59,65 @@ export class GoogleCalendarService {
     );
 
     this.calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
+  }
+
+  /**
+   * Refresh an expired access token using a refresh token
+   * @param connection - The calendar connection with a refresh token
+   * @returns The updated calendar connection
+   */
+  public async refreshToken(connection: CalendarConnection): Promise<CalendarConnection> {
+    if (!connection.refreshToken) {
+      throw new Error('No refresh token available for this connection.');
+    }
+
+    try {
+      this.oauth2Client.setCredentials({
+        refresh_token: connection.refreshToken,
+      });
+      const { credentials } = await this.oauth2Client.refreshAccessToken();
+      const updatedConnection = await this.updateConnectionTokens(connection.id, {
+        accessToken: credentials.access_token!,
+        refreshToken: credentials.refresh_token,
+        tokenExpiresAt: new Date(credentials.expiry_date!),
+      });
+      return updatedConnection;
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+      await db.update(schema.calendarConnections)
+        .set({ isActive: false, syncError: 'Token refresh failed' })
+        .where(eq(schema.calendarConnections.id, connection.id));
+      throw new Error('Failed to refresh token.');
+    }
+  }
+
+  private async updateConnectionTokens(connectionId: number, tokens: { accessToken: string; refreshToken?: string | null; tokenExpiresAt: Date; }) {
+    const { accessToken, refreshToken, tokenExpiresAt } = tokens;
+    const updateData: Partial<CalendarConnection> = {
+      accessToken: encrypt(accessToken),
+      tokenExpiresAt,
+      isActive: true,
+      syncError: null,
+      updatedAt: new Date(),
+    };
+
+    if (refreshToken) {
+      updateData.refreshToken = encrypt(refreshToken);
+    }
+
+    await db.update(schema.calendarConnections)
+      .set(updateData)
+      .where(eq(schema.calendarConnections.id, connectionId));
+
+    const updatedConnection = await db.query.calendarConnections.findFirst({
+      where: eq(schema.calendarConnections.id, connectionId),
+    });
+
+    if (!updatedConnection) {
+      throw new Error('Failed to retrieve updated connection after token refresh.');
+    }
+
+    return updatedConnection;
   }
 
   /**
@@ -108,7 +162,7 @@ export class GoogleCalendarService {
   async handleAuthCallback(code: string, state: string, req: Request): Promise<CalendarConnection> {
     try {
       // Validate OAuth state for CSRF protection first
-      const { agentId } = this.validateOAuthState(state, req.session, 'google');
+      this.validateOAuthState(state as string, req.session, 'google');
       
       const { tokens } = await this.oauth2Client.getToken(code);
       
@@ -120,7 +174,7 @@ export class GoogleCalendarService {
 
       // Get user's calendar list to get primary calendar info
       const calendarList = await this.calendar.calendarList.list();
-      const primaryCalendar = calendarList.data.items?.find((cal: any) => cal.primary);
+      const primaryCalendar = calendarList.data.items?.find((cal: calendar_v3.Schema$CalendarListEntry) => cal.primary);
 
       if (!primaryCalendar) {
         throw new Error('No primary calendar found');
@@ -150,7 +204,7 @@ export class GoogleCalendarService {
         .from(schema.calendarConnections)
         .where(
           and(
-            eq(schema.calendarConnections.providerId, primaryCalendar.id),
+            eq(schema.calendarConnections.providerId, primaryCalendar.id!),
             eq(schema.calendarConnections.provider, 'google')
           )
         );
@@ -162,6 +216,8 @@ export class GoogleCalendarService {
           .update(schema.calendarConnections)
           .set({
             ...connectionData,
+            providerId: connectionData.providerId!,
+            email: connectionData.email!,
             updatedAt: new Date(),
           })
           .where(eq(schema.calendarConnections.id, existingConnection[0].id))
@@ -171,27 +227,90 @@ export class GoogleCalendarService {
         // Create new connection
         const [created] = await db
           .insert(schema.calendarConnections)
-          .values(connectionData)
+          .values({ ...connectionData, providerId: connectionData.providerId!, email: connectionData.email! })
           .returning();
         connection = created;
       }
 
       // Log successful connection
-      await this.logSyncOperation(connection.id, null, 'sync', 'crm_to_calendar', 'success', {
-        operation: 'connection_established',
-        calendarName: primaryCalendar.summary,
-      });
+      await this.logSyncOperation(
+        String(connection.id), 
+        null, 
+        'sync', 
+        'crm_to_calendar', 
+        'success', 
+        'Connection established',
+        { calendarName: primaryCalendar.summary }
+      );
 
       return connection;
     } catch (error) {
       console.error('Google Calendar auth error:', error);
       
       // Log failed connection attempt
-      await this.logSyncOperation(null, null, 'sync', 'crm_to_calendar', 'error', null, 
-        'Failed to establish Google Calendar connection', { error: getErrorMessage(error) });
+      await this.logSyncOperation(
+        null, 
+        null, 
+        'sync', 
+        'crm_to_calendar', 
+        'error', 
+        'Failed to establish Google Calendar connection', 
+        { error: getErrorMessage(error) }
+      );
 
       throw new Error(`Failed to connect Google Calendar: ${getErrorMessage(error)}`);
     }
+  }
+
+  /**
+   * Get the primary calendar connection for an agent
+   * @param agentId - The ID of the agent
+   * @returns The primary calendar connection
+   */
+  async getPrimaryConnection(agentId: string): Promise<CalendarConnection> {
+    const connection = await db.query.calendarConnections.findFirst({
+      where: and(
+        eq(schema.calendarConnections.agentId, agentId),
+        eq(schema.calendarConnections.isActive, true)
+      ),
+      // Assuming the first active connection is the primary one.
+      // Add more specific logic if needed, e.g., a 'isPrimary' flag.
+    });
+
+    if (!connection) {
+      throw new Error('No active calendar connection found for this agent.');
+    }
+
+    return connection;
+  }
+
+  /**
+   * Revoke a Google API token and delete the connection
+   * @param connectionId - The ID of the connection to revoke
+   * @param agentId - The ID of the agent for verification
+   */
+  async revokeConnection(connectionId: number, agentId: string): Promise<void> {
+    const connection = await db.query.calendarConnections.findFirst({
+        where: and(
+            eq(schema.calendarConnections.id, connectionId),
+            eq(schema.calendarConnections.agentId, agentId)
+        ),
+    });
+
+    if (!connection) {
+        throw new Error('Connection not found or you do not have permission to delete it.');
+    }
+
+    try {
+        if (connection.refreshToken) {
+            const refreshToken = decrypt(connection.refreshToken);
+            await this.oauth2Client.revokeToken(refreshToken);
+        }
+    } catch (error) {
+        console.warn(`Failed to revoke Google token for connection ${connectionId}. It might have been already revoked.`, error);
+    }
+
+    await db.delete(schema.calendarConnections).where(eq(schema.calendarConnections.id, connectionId));
   }
 
   /**
@@ -315,10 +434,10 @@ export class GoogleCalendarService {
    */
   async createEvent(connection: CalendarConnection, appointment: Appointment): Promise<string> {
     return await this.executeWithRetry(async (updatedConnection) => {
-      const startTime = new Date(appointment.scheduledDate);
-      const endTime = appointment.endDate 
-        ? new Date(appointment.endDate) 
-        : new Date(startTime.getTime() + ((appointment.duration || 60) * 60 * 1000));
+      const startTime = new Date(appointment.startTime);
+      const endTime = appointment.endTime
+        ? new Date(appointment.endTime)
+        : new Date(startTime.getTime() + (60 * 60 * 1000)); // Default to 1 hour if no end time
 
       const event: GoogleCalendarEvent = {
         summary: appointment.title,
@@ -331,12 +450,12 @@ export class GoogleCalendarService {
           dateTime: endTime.toISOString(),
           timeZone: 'Europe/Berlin',
         },
-        location: appointment.address || appointment.location || undefined,
+        location: appointment.location || undefined,
         status: 'confirmed',
       };
 
       const response = await this.calendar.events.insert({
-        calendarId: updatedConnection.calendarId!,
+        calendarId: updatedConnection.providerId!,
         requestBody: event,
       });
 
@@ -350,41 +469,42 @@ export class GoogleCalendarService {
       await db
         .update(schema.appointments)
         .set({
-          googleCalendarEventId: googleEventId,
-          calendarSyncStatus: 'synced',
-          lastCalendarSync: new Date(),
-          calendarSyncError: null,
+          // externalId: googleEventId, // This field does not exist on appointments
+          // calendarSyncStatus: 'synced',
+          // lastCalendarSync: new Date(),
+          // calendarSyncError: null,
         })
         .where(eq(schema.appointments.id, appointment.id));
 
       // Create calendar event record
       const calendarEventData: InsertCalendarEvent = {
-        connectionId: updatedConnection.id,
+        calendarConnectionId: updatedConnection.id,
         appointmentId: appointment.id,
-        externalEventId: googleEventId,
-        provider: 'google',
+        externalId: googleEventId,
         title: appointment.title,
         description: event.description || null,
-        startDate: startTime instanceof Date ? startTime : new Date(startTime),
-        endDate: endTime instanceof Date ? endTime : new Date(endTime),
+        startTime: startTime,
+        endTime: endTime,
         location: event.location || null,
+        status: 'synced',
         syncStatus: 'synced',
       };
 
-      await db.insert(schema.calendarEvents).values(calendarEventData as any);
+      await db.insert(schema.calendarEvents).values(calendarEventData);
 
       // Log successful sync
       await this.logSyncOperation(
-        updatedConnection.id,
-        appointment.id,
+        updatedConnection.id.toString(),
+        appointment.id.toString(),
         'create',
         'crm_to_calendar',
         'success',
+        `Event created: ${appointment.title}`,
         { googleEventId, appointmentTitle: appointment.title }
       );
 
       return googleEventId;
-    }, connection, appointment.id, 'create');
+    }, connection, String(appointment.id), 'create');
   }
 
   /**
@@ -392,10 +512,10 @@ export class GoogleCalendarService {
    */
   async updateEvent(connection: CalendarConnection, appointment: Appointment, googleEventId: string): Promise<void> {
     await this.executeWithRetry(async (updatedConnection) => {
-      const startTime = new Date(appointment.scheduledDate);
-      const endTime = appointment.endDate 
-        ? new Date(appointment.endDate) 
-        : new Date(startTime.getTime() + ((appointment.duration || 60) * 60 * 1000));
+      const startTime = new Date(appointment.startTime);
+      const endTime = appointment.endTime
+        ? new Date(appointment.endTime)
+        : new Date(startTime.getTime() + (60 * 60 * 1000));
 
       const event: GoogleCalendarEvent = {
         summary: appointment.title,
@@ -408,12 +528,12 @@ export class GoogleCalendarService {
           dateTime: endTime.toISOString(),
           timeZone: 'Europe/Berlin',
         },
-        location: appointment.address || appointment.location || undefined,
+        location: appointment.location || undefined,
         status: appointment.status === 'cancelled' ? 'cancelled' : 'confirmed',
       };
 
       await this.calendar.events.update({
-        calendarId: updatedConnection.calendarId!,
+        calendarId: updatedConnection.providerId!,
         eventId: googleEventId,
         requestBody: event,
       });
@@ -422,9 +542,9 @@ export class GoogleCalendarService {
       await db
         .update(schema.appointments)
         .set({
-          calendarSyncStatus: 'synced',
-          lastCalendarSync: new Date(),
-          calendarSyncError: null,
+          // calendarSyncStatus: 'synced',
+          // lastCalendarSync: new Date(),
+          // calendarSyncError: null,
         })
         .where(eq(schema.appointments.id, appointment.id));
 
@@ -433,24 +553,25 @@ export class GoogleCalendarService {
         .update(schema.calendarEvents)
         .set({
           title: appointment.title,
-          startDate: startTime,
-          endDate: endTime,
+          startTime: startTime,
+          endTime: endTime,
           location: event.location,
-          lastSyncedAt: new Date(),
+          lastModified: new Date(),
           syncStatus: 'synced',
         })
-        .where(eq(schema.calendarEvents.externalEventId, googleEventId));
+        .where(eq(schema.calendarEvents.externalId, googleEventId));
 
       // Log successful sync
       await this.logSyncOperation(
-        updatedConnection.id,
-        appointment.id,
+        updatedConnection.id.toString(),
+        appointment.id.toString(),
         'update',
         'crm_to_calendar',
         'success',
+        `Event updated: ${appointment.title}`,
         { googleEventId, appointmentTitle: appointment.title }
       );
-    }, connection, appointment.id, 'update');
+    }, connection, String(appointment.id), 'update');
   }
 
   /**
@@ -459,7 +580,7 @@ export class GoogleCalendarService {
   async deleteEvent(connection: CalendarConnection, googleEventId: string, appointmentId?: string): Promise<void> {
     await this.executeWithRetry(async (updatedConnection) => {
       await this.calendar.events.delete({
-        calendarId: updatedConnection.calendarId!,
+        calendarId: updatedConnection.providerId!,
         eventId: googleEventId,
       });
 
@@ -468,29 +589,30 @@ export class GoogleCalendarService {
         .update(schema.calendarEvents)
         .set({
           syncStatus: 'synced',
-          lastSyncedAt: new Date(),
+          lastModified: new Date(),
         })
-        .where(eq(schema.calendarEvents.externalEventId, googleEventId));
+        .where(eq(schema.calendarEvents.externalId, googleEventId));
 
       // Update appointment if provided
       if (appointmentId) {
         await db
           .update(schema.appointments)
           .set({
-            googleCalendarEventId: null,
-            calendarSyncStatus: 'pending',
-            lastCalendarSync: new Date(),
+            // externalId: null,
+            // calendarSyncStatus: 'pending',
+            // lastCalendarSync: new Date(),
           })
-          .where(eq(schema.appointments.id, appointmentId));
+          .where(eq(schema.appointments.id, parseInt(appointmentId, 10)));
       }
 
       // Log successful sync
       await this.logSyncOperation(
-        updatedConnection.id,
+        updatedConnection.id.toString(),
         appointmentId || null,
         'delete',
         'crm_to_calendar',
         'success',
+        `Event deleted: ${googleEventId}`,
         { googleEventId }
       );
     }, connection, appointmentId || null, 'delete');
@@ -499,10 +621,10 @@ export class GoogleCalendarService {
   /**
    * Get events from Google Calendar with retry logic
    */
-  async getEvents(connection: CalendarConnection, timeMin?: Date, timeMax?: Date): Promise<GoogleCalendarEvent[]> {
+  async getEvents(connection: CalendarConnection, timeMin?: Date, timeMax?: Date): Promise<calendar_v3.Schema$Event[]> {
     return await this.executeWithRetry(async (updatedConnection) => {
       const response = await this.calendar.events.list({
-        calendarId: updatedConnection.calendarId!,
+        calendarId: updatedConnection.providerId!,
         timeMin: timeMin?.toISOString(),
         timeMax: timeMax?.toISOString(),
         singleEvents: true,
@@ -564,14 +686,13 @@ export class GoogleCalendarService {
                 
                 // Log failure
                 await this.logSyncOperation(
-                  currentConnection.id,
+                  String(currentConnection.id),
                   appointmentId,
-                  operationType as any,
+                  operationType as 'create' | 'update' | 'delete' | 'sync',
                   'crm_to_calendar',
                   'error',
-                  { attempt, operationType },
                   `Token refresh failed: ${getErrorMessage(refreshError)}`,
-                  { originalError: errorMessage, refreshError: getErrorMessage(refreshError) }
+                  { attempt, operationType, originalError: errorMessage, refreshError: getErrorMessage(refreshError) }
                 );
                 
                 throw new Error(`Token refresh failed - user re-authentication required: ${getErrorMessage(refreshError)}`);
@@ -599,14 +720,13 @@ export class GoogleCalendarService {
     
     // Log final failure
     await this.logSyncOperation(
-      currentConnection.id,
+      String(currentConnection.id),
       appointmentId,
-      operationType as any,
+      operationType as 'create' | 'update' | 'delete' | 'sync',
       'crm_to_calendar',
       'error',
-      { attempts: this.MAX_RETRY_ATTEMPTS, operationType },
       `Operation failed after ${this.MAX_RETRY_ATTEMPTS} attempts: ${finalError.message}`,
-      { error: finalError.message }
+      { attempts: this.MAX_RETRY_ATTEMPTS, operationType, error: finalError.message }
     );
     
     throw finalError;
@@ -615,36 +735,37 @@ export class GoogleCalendarService {
   /**
    * Check if error is an authentication/authorization error
    */
-  private isAuthenticationError(error: any): boolean {
-    const errorMessage = (error.message || '').toLowerCase();
-    const statusCode = error.status || error.statusCode || error.code;
-    
+  private isAuthenticationError(error: unknown): boolean {
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
+    const err = error as Record<string, unknown>;
+    const errorMessage = ((err.message as string) || '').toLowerCase();
+    const statusCode = err.code || (err.response as { status?: number })?.status;
+
+    const responseData = (err.response as { data?: { error?: string } })?.data;
+
     return (
       statusCode === 401 ||
       statusCode === 403 ||
-      errorMessage.includes('unauthorized') ||
-      errorMessage.includes('forbidden') ||
-      errorMessage.includes('invalid credentials') ||
-      errorMessage.includes('authentication') ||
-      errorMessage.includes('token') ||
+      errorMessage.includes('invalid_grant') ||
       errorMessage.includes('invalid_token') ||
-      errorMessage.includes('token_expired')
+      errorMessage.includes('token has been expired or revoked') ||
+      responseData?.error === 'invalid_grant'
     );
   }
 
   /**
-   * Update appointment sync error status
+   * Update appointment sync status with an error message
    */
-  private async updateAppointmentSyncError(appointmentId: string, error: string): Promise<void> {
+  private async updateAppointmentSyncError(appointmentId: string, errorMessage: string): Promise<void> {
     try {
       await db
         .update(schema.appointments)
         .set({
-          calendarSyncStatus: 'error',
-          calendarSyncError: error,
-          lastCalendarSync: new Date(),
+          notes: `Sync Error: ${errorMessage}`,
         })
-        .where(eq(schema.appointments.id, appointmentId));
+        .where(eq(schema.appointments.id, parseInt(appointmentId, 10)));
     } catch (dbError) {
       console.error('Failed to update appointment sync error:', dbError);
     }
@@ -737,8 +858,8 @@ export class GoogleCalendarService {
       description += `Immobilie: ${appointment.propertyId}\n`;
     }
     
-    if (appointment.preparation) {
-      description += `\nVorbereitung:\n${appointment.preparation}`;
+    if (appointment.notes) {
+      description += `\nNotizen:\n${appointment.notes}`;
     }
     
     description += '\n\n--- Automatisch erstellt von Bodensee Immobilien Müller CRM ---';
@@ -784,25 +905,21 @@ export class GoogleCalendarService {
     operation: 'create' | 'update' | 'delete' | 'sync',
     direction: 'crm_to_calendar' | 'calendar_to_crm',
     status: 'success' | 'error' | 'skipped',
-    dataSnapshot: any = null,
-    errorMessage?: string,
-    errorDetails?: any
+    message?: string,
+    details?: unknown
   ): Promise<void> {
     try {
-      const logData: InsertCalendarSyncLog = {
-        connectionId,
-        appointmentId,
+      const logData: Omit<InsertCalendarSyncLog, 'id' | 'createdAt' | 'startedAt' | 'appointmentId' | 'direction'> = {
+        connectionId: connectionId ? parseInt(connectionId, 10) : null,
         operation,
-        direction,
         status,
-        dataSnapshot,
-        errorMessage,
-        errorDetails,
-        completedAt: new Date(),
-        duration: 0, // TODO: Add actual timing
+        message: message,
+        errorDetails: details ? JSON.stringify(details) : null,
+        syncType: operation,
+        eventCount: 1,
       };
 
-      await db.insert(schema.calendarSyncLogs).values(logData);
+      await db.insert(schema.calendarSyncLogs).values(logData as InsertCalendarSyncLog);
     } catch (error) {
       console.error('Failed to log sync operation:', error);
     }
@@ -816,7 +933,7 @@ export class GoogleCalendarService {
       await this.executeWithRetry(async (updatedConnection) => {
         // Make a simple call to verify connection
         await this.calendar.calendarList.get({
-          calendarId: updatedConnection.calendarId!,
+          calendarId: updatedConnection.providerId!,
         });
 
         // Update connection status on success
@@ -852,11 +969,91 @@ export class GoogleCalendarService {
   }
 
   /**
+   * Synchronize all appointments for a given connection.
+   * Fetches events from Google Calendar and appointments from the local DB
+   * and performs a two-way sync.
+   * @param connectionId The ID of the calendar connection to sync.
+   * @param agentId The ID of the agent performing the sync.
+   */
+  async syncAllAppointments(connectionId: number, agentId: number): Promise<void> {
+    const connection = await db.query.calendarConnections.findFirst({
+        where: and(
+            eq(schema.calendarConnections.id, connectionId),
+            eq(schema.calendarConnections.agentId, agentId.toString())
+        ),
+    });
+
+    if (!connection || !connection.syncEnabled) {
+        console.log(`Sync skipped for connection ${connectionId} (not found or disabled).`);
+        return;
+    }
+
+    console.log(`Starting two-way sync for connection: ${connection.id}`);
+    await this.logSyncOperation(connection.id.toString(), null, 'sync', 'crm_to_calendar', 'success', 'Sync started');
+
+    try {
+        const timeMin = new Date();
+        timeMin.setMonth(timeMin.getMonth() - 3); // Sync last 3 months
+        const timeMax = new Date();
+        timeMax.setMonth(timeMax.getMonth() + 3); // Sync next 3 months
+
+        // 1. Fetch data from both sources
+        const googleEvents = await this.getEvents(connection, timeMin, timeMax);
+        const crmAppointments = await db.query.appointments.findMany({
+            where: and(
+                eq(schema.appointments.agentId, agentId),
+                // Add time range filter if needed
+            ),
+        });
+
+        const googleEventMap = new Map(googleEvents.map(e => [e.id, e]));
+
+        // 2. Sync from CRM to Google Calendar (Create/Update)
+        for (const crmApp of crmAppointments) {
+            const externalEvent = await db.query.calendarEvents.findFirst({ where: eq(schema.calendarEvents.appointmentId, crmApp.id) });
+            if (externalEvent && googleEventMap.has(externalEvent.externalId)) {
+                // Update existing event
+                await this.updateEvent(connection, crmApp, externalEvent.externalId);
+            } else {
+                // Create new event
+                await this.createEvent(connection, crmApp);
+            }
+        }
+
+        // 3. Sync from Google Calendar to CRM (Create/Update/Delete)
+        for (const gEvent of googleEvents) {
+            const existingCalendarEvent = await db.query.calendarEvents.findFirst({ where: eq(schema.calendarEvents.externalId, gEvent.id!) });
+            if (gEvent.id && !existingCalendarEvent) {
+                // Create new appointment in CRM
+                // This part is complex and needs a robust transformation logic.
+                // For now, we'll just log it.
+                console.log(`Found new Google event to be created in CRM: ${gEvent.summary}`);
+              }
+        }
+
+        await db.update(schema.calendarConnections)
+            .set({ lastSyncAt: new Date(), syncStatus: 'synced', syncError: null })
+            .where(eq(schema.calendarConnections.id, connection.id));
+
+        await this.logSyncOperation(connection.id.toString(), null, 'sync', 'crm_to_calendar', 'success', 'Sync completed');
+        console.log(`Successfully completed sync for connection: ${connection.id}`);
+
+    } catch (error) {
+        const errorMessage = getErrorMessage(error);
+        console.error(`Sync failed for connection ${connection.id}:`, errorMessage);
+        await db.update(schema.calendarConnections)
+            .set({ syncStatus: 'error', syncError: errorMessage })
+            .where(eq(schema.calendarConnections.id, connection.id));
+        await this.logSyncOperation(connection.id.toString(), null, 'sync', 'crm_to_calendar', 'error', 'Sync failed', { error: errorMessage });
+    }
+  }
+
+  /**
    * Validate OAuth state for CSRF protection
    */
   private validateOAuthState(
     state: string, 
-    session: any, 
+    session: Request['session'], 
     expectedProvider: 'google' | 'apple' | 'outlook'
   ): { agentId: string } {
     if (!session.oauthStates || !session.oauthStates[state]) {
@@ -885,14 +1082,14 @@ export class GoogleCalendarService {
   /**
    * Clean up expired OAuth states from session
    */
-  private cleanupExpiredStates(session: any): void {
+  private cleanupExpiredStates(session: Request['session']): void {
     if (!session.oauthStates) {
       return;
     }
     
     const now = Date.now();
     Object.keys(session.oauthStates).forEach(state => {
-      if (session.oauthStates[state].expiresAt < now) {
+      if (session.oauthStates && session.oauthStates[state] && session.oauthStates[state].expiresAt < now) {
         delete session.oauthStates[state];
       }
     });

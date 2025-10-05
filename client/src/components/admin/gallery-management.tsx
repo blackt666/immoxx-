@@ -9,18 +9,12 @@ import {
   Upload,
   Trash2,
   Eye,
-  Download,
   RotateCw,
   FileImage,
   Camera,
   AlertTriangle,
   Plus,
-  Search,
-  Edit,
   Building,
-  MapPin,
-  Bed,
-  Bath,
   Square,
   X,
   Folder,
@@ -34,13 +28,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -103,23 +90,7 @@ interface UploadQueueConfig {
   maxFileSize: number;
 }
 
-const apiRequest = async (url: string, options?: RequestInit): Promise<any> => {
-  try {
-    const response = await fetch(url, {
-      credentials: "include",
-      ...options,
-    });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(`API request failed for ${url}:`, error);
-    throw error;
-  }
-};
 
 // --- New Component for Real Estate Listings ---
 interface RealEstateListing {
@@ -244,6 +215,7 @@ const CreateListingForm = ({ image, onClose }: { image: GalleryImage; onClose: (
             <textarea
               id="description"
               name="description"
+              aria-label="Beschreibung"
               value={listing.description}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2"
@@ -531,7 +503,7 @@ export default function GalleryManagement() {
     }
   };
 
-  const handleFolderUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFolderSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     const folderName = files && files.length > 0 ? 
       files[0].webkitRelativePath?.split('/')[0] || 'Ordner' : 
@@ -586,7 +558,7 @@ export default function GalleryManagement() {
       xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
-            const result = JSON.parse(xhr.responseText);
+            // const result = JSON.parse(xhr.responseText);
             
             // Update status to completed
             setBatchUpload(prev => ({
@@ -600,7 +572,7 @@ export default function GalleryManagement() {
               completed: prev.completed + 1
             }));
             resolve();
-          } catch (parseError) {
+          } catch {
             reject(new Error('Fehler beim Parsen der Server-Antwort'));
           }
         } else {
@@ -608,7 +580,10 @@ export default function GalleryManagement() {
           try {
             const errorData = JSON.parse(xhr.responseText);
             errorMessage = errorData.message || errorData.error || errorMessage;
-          } catch {}
+           
+          } catch {
+            // Ignore if response is not valid JSON
+          }
           reject(new Error(errorMessage));
         }
       });
@@ -1046,7 +1021,7 @@ export default function GalleryManagement() {
       ];
 
       let images = [];
-      let lastError = null;
+      // let lastError = null;
 
       for (const endpoint of endpoints) {
         try {
@@ -1073,11 +1048,11 @@ export default function GalleryManagement() {
             }
           } else {
             console.log(`❌ ${endpoint} failed with status: ${response.status}`);
-            lastError = `HTTP ${response.status}`;
+            // lastError = `HTTP ${response.status}`;
           }
         } catch (err) {
           console.log(`❌ ${endpoint} error:`, err);
-          lastError = (err as Error).message;
+          // lastError = (err as Error).message;
           continue;
         }
       }
@@ -1110,7 +1085,7 @@ export default function GalleryManagement() {
         });
       }
 
-      const validImages = images.filter((img: any) => img && img.id && (img.filename || img.url));
+      const validImages = images.filter((img: GalleryImage) => img && img.id && (img.filename || img.url));
       console.log(`✅ Valid images found: ${validImages.length}`);
 
       setGalleryImages(validImages);
@@ -1220,7 +1195,7 @@ export default function GalleryManagement() {
   });
 
   const upload360ImageMutation = useMutation({
-    mutationFn: async ({ file, title }: { file: File; title: string }) => {
+    mutationFn: async ({ file, title }: { file: File; title: string }): Promise<{ image?: { metadata?: { title?: string } }; filename?: string }> => {
       console.log("🚀 Starting 360° upload:", {
         filename: file.name,
         size: file.size,
@@ -1330,7 +1305,7 @@ export default function GalleryManagement() {
         img.src = URL.createObjectURL(file);
       });
     },
-    onSuccess: (result: any) => {
+    onSuccess: (result: { image?: { metadata?: { title?: string } }; filename?: string }) => {
       console.log("🎉 360° Upload completed successfully");
       fetchImages().catch(console.error);
       setTour360Title("");
@@ -1475,13 +1450,7 @@ export default function GalleryManagement() {
     });
   };
 
-  // Handler for folder upload (now enhanced)
-  const handleFolderSelect = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    
-    const folderName = files[0].webkitRelativePath?.split('/')[0] || 'Ordner';
-    processSelectedFiles(files, folderName);
-  };
+
 
   const handle360FileSelect = (files: FileList | null) => {
     if (!files || files.length === 0) {
@@ -1710,7 +1679,12 @@ export default function GalleryManagement() {
       )}
 
       {/* Batch Upload Modal */}
-      <Dialog open={showBatchUpload} onOpenChange={setShowBatchUpload}>
+      <Dialog open={showBatchUpload} onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          closeBatchUpload();
+        }
+        setShowBatchUpload(isOpen);
+      }}>
         <DialogContent className="max-w-6xl w-full max-h-[90vh] overflow-y-auto" data-testid="dialog-batch-upload">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
@@ -1902,7 +1876,12 @@ export default function GalleryManagement() {
       </Dialog>
 
       {/* 360° Viewer Modal */}
-      <Dialog open={show360Modal} onOpenChange={setShow360Modal}>
+      <Dialog open={show360Modal} onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          close360Viewer();
+        }
+        setShow360Modal(isOpen);
+      }}>
         <DialogContent className="max-w-5xl w-full h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
@@ -2033,6 +2012,7 @@ export default function GalleryManagement() {
                 ref={fileInputRef}
                 type="file"
                 multiple
+                aria-label="Dateien auswählen"
                 accept="image/*"
                 onChange={(e) => handleFileSelect(e.target.files)}
                 className="hidden"
@@ -2041,9 +2021,10 @@ export default function GalleryManagement() {
                 ref={folderInputRef}
                 type="file"
                 multiple
-                {...({ webkitdirectory: true } as any)}
+                aria-label="Ordner auswählen"
+                {...({ webkitdirectory: "true" } as React.InputHTMLAttributes<HTMLInputElement>)}
                 accept="image/*"
-                onChange={(e) => handleFolderSelect(e.target.files)}
+                onChange={handleFolderSelect}
                 className="hidden"
               />
 
@@ -2247,7 +2228,7 @@ export default function GalleryManagement() {
                     <ul className="ml-4 mt-1 space-y-1">
                       <li>
                         • <strong>Insta360:</strong> Exportieren Sie als
-                        "Equirectangular" (nicht als normale Fotos)
+                        &quot;Equirectangular&quot; (nicht als normale Fotos)
                       </li>
                       <li>
                         • <strong>Ricoh Theta:</strong> Standardformat wird

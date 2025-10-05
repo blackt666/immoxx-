@@ -56,11 +56,11 @@ export default function AGB() {
                     <br />
                     Deutschland
                     <br />
-                    (nachfolgend "Makler" genannt)
+                    (nachfolgend &quot;Makler&quot; genannt)
                   </p>
                 </div>
                 <p className="text-gray-700">
-                  und dem Auftraggeber (nachfolgend "Kunde" genannt). Sie gelten
+                  und dem Auftraggeber (nachfolgend &quot;Kunde&quot; genannt). Sie gelten
                   für Immobilienvermittlungsverträge, Beratungsverträge und
                   sonstige Dienstleistungen im Immobilienbereich.
                 </p>

@@ -60,6 +60,7 @@
     "@types/cors": "^2.8.19",
     "@types/helmet": "^0.0.48",
     "@types/multer": "^2.0.0",
+    "@types/nodemailer": "^7.0.2",
     "@types/papaparse": "^5.3.16",
     "@types/winston": "^2.4.4",
     "@types/xlsx": "^0.0.35",
@@ -80,8 +81,8 @@
     "cors": "^2.8.5",
     "date-fns": "^3.6.0",
     "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.39.1",
-    "drizzle-zod": "^0.7.0",
+    "drizzle-orm": "^0.31.2",
+    "drizzle-zod": "^0.5.1",
     "embla-carousel-react": "^8.6.0",
     "express": "^4.21.2",
     "express-session": "^1.18.2",
@@ -95,6 +96,7 @@
     "multer": "^2.0.2",
     "nanoid": "^5.1.5",
     "next-themes": "^0.4.6",
+    "nodemailer": "^7.0.6",
     "openai": "^5.23.2",
     "pannellum": "^2.5.6",
     "papaparse": "^5.5.3",
@@ -140,7 +142,7 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
-    "drizzle-kit": "^0.30.4",
+    "drizzle-kit": "^0.22.8",
     "esbuild": "^0.25.0",
     "eslint": "^9.37.0",
     "eslint-plugin-react": "^7.37.5",
@@ -150,7 +152,7 @@
     "tsx": "^4.19.1",
     "typescript": "5.6.3",
     "typescript-eslint": "^8.45.0",
-    "vite": "^5.4.19"
+    "vite": "6.1.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"

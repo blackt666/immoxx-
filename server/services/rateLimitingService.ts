@@ -1,6 +1,6 @@
 import { db } from "../db.js";
 import { rateLimitEntries } from "@shared/schema";
-import { eq, and, sql, lt } from "drizzle-orm";
+import { eq, and, lt } from "drizzle-orm";
 
 interface RateLimitRecord {
   count: number;
@@ -127,82 +127,108 @@ export class RateLimitingService {
    */
   static async checkLoginRateLimit(clientId: string): Promise<RateLimitResult> {
     const now = Date.now();
+    const nowDate = new Date(now);
     const shortWindowMs = 5 * 60 * 1000; // 5 minutes
     const longWindowMs = 60 * 60 * 1000; // 1 hour
     const maxAttemptsShort = 5; // Max 5 attempts per 5 minutes
     const maxAttemptsLong = 10; // Max 10 attempts per hour
 
     try {
-      // TEMPORARILY DISABLED: Database rate limiting has schema issues
-      // Falling back to in-memory only for now
-      throw new Error('Database rate limiting temporarily disabled - using in-memory fallback');
-
-      // TRY DATABASE FIRST
       return await db.transaction(async (tx) => {
-        const currentTime = new Date(now);
-        const resetTimeShort = new Date(now + shortWindowMs);
-        const resetTimeLong = new Date(now + longWindowMs);
+        const [existing] = await tx
+          .select()
+          .from(rateLimitEntries)
+          .where(
+            and(
+              eq(rateLimitEntries.identifier, clientId),
+              eq(rateLimitEntries.endpoint, 'login')
+            )
+          )
+          .limit(1);
 
-        // ATOMIC OPERATION: Insert or update with atomic increment and window reset logic
-        const [result] = await tx
-          .insert(rateLimitEntries)
-          .values({
+        if (!existing) {
+          const resetTime = new Date(now + shortWindowMs);
+
+          await tx.insert(rateLimitEntries).values({
             identifier: clientId,
             endpoint: 'login',
             count: 1,
-            resetTime: resetTimeShort,
-            firstAttemptTime: currentTime,
+            resetTime,
+            firstAttemptTime: nowDate,
             blocked: false,
-          })
-          .onConflictDoUpdate({
-            target: [rateLimitEntries.identifier, rateLimitEntries.endpoint], // Uses the unique constraint
-            set: {
-              // ATOMIC INCREMENT with window reset logic in single query
-              count: sql`CASE 
-                WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN 1 
-                ELSE ${rateLimitEntries.count} + 1 
-              END`,
-              resetTime: sql`CASE
-                WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN ${resetTimeShort}
-                WHEN ${rateLimitEntries.count} + 1 > ${maxAttemptsShort} AND
-                     (strftime('%s', ${currentTime}) * 1000 - strftime('%s', COALESCE(${rateLimitEntries.firstAttemptTime}, ${rateLimitEntries.createdAt})) * 1000) < 3600000 THEN ${resetTimeLong}
-                ELSE ${rateLimitEntries.resetTime}
-              END`,
-              firstAttemptTime: sql`CASE
-                WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN ${currentTime}
-                ELSE COALESCE(${rateLimitEntries.firstAttemptTime}, ${rateLimitEntries.createdAt})
-              END`,
-              blocked: sql`CASE
-                WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN false
-                WHEN ${rateLimitEntries.count} + 1 > ${maxAttemptsLong} AND
-                     (strftime('%s', ${currentTime}) * 1000 - strftime('%s', COALESCE(${rateLimitEntries.firstAttemptTime}, ${rateLimitEntries.createdAt})) * 1000) < 3600000 THEN true
-                ELSE ${rateLimitEntries.blocked}
-              END`,
-              updatedAt: currentTime,
-            },
-          })
-          .returning();
+            createdAt: nowDate,
+            updatedAt: nowDate,
+          });
 
-        // Check the result for rate limiting decision
-        const isBlocked = result.blocked && now < new Date(result.resetTime).getTime();
-        const withinShortLimit = result.count <= maxAttemptsShort;
-        const timeSinceFirst = now - new Date(result.firstAttemptTime || result.createdAt!).getTime();
-        const withinLongWindow = timeSinceFirst < longWindowMs;
-        const exceedsLongLimit = result.count > maxAttemptsLong;
-
-        if (isBlocked || (withinLongWindow && exceedsLongLimit)) {
           return {
-            allowed: false,
-            resetTime: new Date(result.resetTime).getTime(),
-            retryAfter: Math.ceil((new Date(result.resetTime).getTime() - now) / 1000),
-            currentCount: result.count,
+            allowed: true,
+            currentCount: 1,
+            resetTime: resetTime.getTime(),
           };
         }
 
-        return { allowed: true, currentCount: result.count };
+        let count = typeof existing.count === 'number' ? existing.count : 0;
+        let resetTime = RateLimitingService.normalizeDate(existing.resetTime, nowDate);
+        let firstAttempt = RateLimitingService.normalizeDate(
+          existing.firstAttemptTime ?? existing.createdAt,
+          nowDate
+        );
+        let blocked = !!existing.blocked;
+
+        if (resetTime.getTime() <= now) {
+          count = 1;
+          resetTime = new Date(now + shortWindowMs);
+          firstAttempt = nowDate;
+          blocked = false;
+        } else {
+          count += 1;
+          const timeSinceFirst = now - firstAttempt.getTime();
+
+          if (timeSinceFirst < longWindowMs && count > maxAttemptsLong) {
+            blocked = true;
+            resetTime = new Date(now + longWindowMs);
+          } else {
+            blocked = false;
+            if (count > maxAttemptsShort) {
+              resetTime = new Date(now + shortWindowMs);
+            }
+          }
+        }
+
+        await tx
+          .update(rateLimitEntries)
+          .set({
+            count,
+            resetTime,
+            firstAttemptTime: firstAttempt,
+            blocked,
+            updatedAt: nowDate,
+          })
+          .where(
+            and(
+              eq(rateLimitEntries.identifier, clientId),
+              eq(rateLimitEntries.endpoint, 'login')
+            )
+          );
+
+        const resetMillis = resetTime.getTime();
+
+        if (blocked) {
+          return {
+            allowed: false,
+            resetTime: resetMillis,
+            retryAfter: Math.max(0, Math.ceil((resetMillis - now) / 1000)),
+            currentCount: count,
+          };
+        }
+
+        return {
+          allowed: true,
+          currentCount: count,
+          resetTime: resetMillis,
+        };
       });
     } catch (error) {
-      // FAIL-SAFE: Fall back to in-memory storage on DB errors
       console.error('🔒 Database rate limiting failed, using in-memory fallback:', error);
       return this.checkLoginRateLimitFallback(clientId, now, shortWindowMs, longWindowMs, maxAttemptsShort, maxAttemptsLong);
     }
@@ -281,68 +307,96 @@ export class RateLimitingService {
    */
   static async checkAdminRateLimit(clientId: string): Promise<RateLimitResult> {
     const now = Date.now();
+    const nowDate = new Date(now);
     const windowMs = 15 * 60 * 1000; // 15 minutes
     const maxRequests = 10; // Max 10 admin operations per 15 minutes
 
     try {
-      // TRY DATABASE FIRST
       return await db.transaction(async (tx) => {
-        const currentTime = new Date(now);
-        const resetTime = new Date(now + windowMs);
+        const [existing] = await tx
+          .select()
+          .from(rateLimitEntries)
+          .where(
+            and(
+              eq(rateLimitEntries.identifier, clientId),
+              eq(rateLimitEntries.endpoint, 'admin')
+            )
+          )
+          .limit(1);
 
-        // ATOMIC OPERATION: Insert or update with atomic increment and window reset logic
-        const [result] = await tx
-          .insert(rateLimitEntries)
-          .values({
+        if (!existing) {
+          const resetTime = new Date(now + windowMs);
+
+          await tx.insert(rateLimitEntries).values({
             identifier: clientId,
             endpoint: 'admin',
             count: 1,
-            resetTime: resetTime,
-            firstAttemptTime: currentTime,
+            resetTime,
+            firstAttemptTime: nowDate,
             blocked: false,
-          })
-          .onConflictDoUpdate({
-            target: [rateLimitEntries.identifier, rateLimitEntries.endpoint], // Uses the unique constraint
-            set: {
-              // ATOMIC INCREMENT with window reset logic in single query
-              count: sql`CASE 
-                WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN 1 
-                ELSE ${rateLimitEntries.count} + 1 
-              END`,
-              resetTime: sql`CASE 
-                WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN ${resetTime}
-                ELSE ${rateLimitEntries.resetTime}
-              END`,
-              firstAttemptTime: sql`CASE 
-                WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN ${currentTime}
-                ELSE COALESCE(${rateLimitEntries.firstAttemptTime}, ${rateLimitEntries.createdAt})
-              END`,
-              blocked: sql`CASE 
-                WHEN ${rateLimitEntries.resetTime} <= ${currentTime} THEN false
-                ELSE ${rateLimitEntries.blocked}
-              END`,
-              updatedAt: currentTime,
-            },
-          })
-          .returning();
+            createdAt: nowDate,
+            updatedAt: nowDate,
+          });
 
-        // Check the result for rate limiting decision
-        const isExpired = now >= new Date(result.resetTime).getTime();
-        const exceedsLimit = result.count > maxRequests;
-
-        if (!isExpired && exceedsLimit) {
           return {
-            allowed: false,
-            resetTime: new Date(result.resetTime).getTime(),
-            retryAfter: Math.ceil((new Date(result.resetTime).getTime() - now) / 1000),
-            currentCount: result.count,
+            allowed: true,
+            currentCount: 1,
+            resetTime: resetTime.getTime(),
           };
         }
 
-        return { allowed: true, currentCount: result.count };
+        let count = typeof existing.count === 'number' ? existing.count : 0;
+        let resetTime = RateLimitingService.normalizeDate(existing.resetTime, nowDate);
+        let firstAttempt = RateLimitingService.normalizeDate(
+          existing.firstAttemptTime ?? existing.createdAt,
+          nowDate
+        );
+        let blocked = !!existing.blocked;
+
+        if (resetTime.getTime() <= now) {
+          count = 1;
+          resetTime = new Date(now + windowMs);
+          firstAttempt = nowDate;
+          blocked = false;
+        } else {
+          count += 1;
+          blocked = count > maxRequests;
+        }
+
+        await tx
+          .update(rateLimitEntries)
+          .set({
+            count,
+            resetTime,
+            firstAttemptTime: firstAttempt,
+            blocked,
+            updatedAt: nowDate,
+          })
+          .where(
+            and(
+              eq(rateLimitEntries.identifier, clientId),
+              eq(rateLimitEntries.endpoint, 'admin')
+            )
+          );
+
+        const resetMillis = resetTime.getTime();
+
+        if (blocked) {
+          return {
+            allowed: false,
+            resetTime: resetMillis,
+            retryAfter: Math.max(0, Math.ceil((resetMillis - now) / 1000)),
+            currentCount: count,
+          };
+        }
+
+        return {
+          allowed: true,
+          currentCount: count,
+          resetTime: resetMillis,
+        };
       });
     } catch (error) {
-      // FAIL-SAFE: Fall back to in-memory storage on DB errors
       console.error('🔒 Database admin rate limiting failed, using in-memory fallback:', error);
       return this.checkAdminRateLimitFallback(clientId, now, windowMs, maxRequests);
     }
@@ -393,21 +447,19 @@ export class RateLimitingService {
    * Clean up expired rate limit entries to prevent memory leaks
    * OPTIMIZED: Uses efficient indexed deletes for better performance
    */
-  static async cleanupExpiredEntries(tx: any, limitType?: string): Promise<void> {
+  static async cleanupExpiredEntries(tx: any, endpoint?: string): Promise<void> {
     const now = new Date();
     
-    if (limitType) {
-      // Uses limit_type_reset_idx index for efficient lookup
+    if (endpoint) {
       await tx
         .delete(rateLimitEntries)
         .where(
           and(
-            eq(rateLimitEntries.limitType, limitType),
+            eq(rateLimitEntries.endpoint, endpoint),
             lt(rateLimitEntries.resetTime, now)
           )
         );
     } else {
-      // Uses limit_type_reset_idx index for efficient cleanup across all types
       await tx
         .delete(rateLimitEntries)
         .where(lt(rateLimitEntries.resetTime, now));
@@ -425,11 +477,11 @@ export class RateLimitingService {
     try {
       // Clean up database entries
       const now = new Date();
-      const result = await db
+      const result = (await db
         .delete(rateLimitEntries)
-        .where(lt(rateLimitEntries.resetTime, now));
+        .where(lt(rateLimitEntries.resetTime, now))) as { changes?: number };
       
-      dbCleaned = result.rowCount || 0;
+      dbCleaned = result?.changes ?? 0;
     } catch (error) {
       console.error('🔒 Database rate limiting cleanup error:', error);
     }
@@ -452,26 +504,32 @@ export class RateLimitingService {
   /**
    * Get rate limit status for monitoring
    */
-  static async getRateLimitStatus(clientId: string, limitType: string): Promise<RateLimitRecord | null> {
+  static async getRateLimitStatus(identifier: string, endpoint: string): Promise<RateLimitRecord | null> {
     try {
       const record = await db
         .select()
         .from(rateLimitEntries)
         .where(
           and(
-            eq(rateLimitEntries.clientId, clientId),
-            eq(rateLimitEntries.limitType, limitType)
+            eq(rateLimitEntries.identifier, identifier),
+            eq(rateLimitEntries.endpoint, endpoint)
           )
         )
         .limit(1);
 
-      if (!record[0]) return null;
+      const entry = record[0];
+      if (!entry) return null;
+
+      const resetDate = RateLimitingService.normalizeDate(entry.resetTime, new Date());
+      const firstAttemptDate = entry.firstAttemptTime
+        ? RateLimitingService.normalizeDate(entry.firstAttemptTime, entry.createdAt ?? resetDate)
+        : undefined;
 
       return {
-        count: record[0].count,
-        resetTime: new Date(record[0].resetTime).getTime(),
-        firstAttemptTime: record[0].firstAttemptTime ? new Date(record[0].firstAttemptTime).getTime() : undefined,
-        blocked: record[0].blocked || false,
+        count: entry.count ?? 0,
+        resetTime: resetDate.getTime(),
+        firstAttemptTime: firstAttemptDate?.getTime(),
+        blocked: !!entry.blocked,
       };
     } catch (error) {
       console.error('🔒 Rate limiting status check error:', error);
@@ -482,27 +540,34 @@ export class RateLimitingService {
   /**
    * Reset rate limit for a client (admin operation)
    */
-  static async resetRateLimit(clientId: string, limitType?: string): Promise<boolean> {
+  static async resetRateLimit(identifier: string, endpoint?: string): Promise<boolean> {
     try {
-      if (limitType) {
+      if (endpoint) {
         await db
           .delete(rateLimitEntries)
           .where(
             and(
-              eq(rateLimitEntries.clientId, clientId),
-              eq(rateLimitEntries.limitType, limitType)
+              eq(rateLimitEntries.identifier, identifier),
+              eq(rateLimitEntries.endpoint, endpoint)
             )
           );
       } else {
         await db
           .delete(rateLimitEntries)
-          .where(eq(rateLimitEntries.clientId, clientId));
+          .where(eq(rateLimitEntries.identifier, identifier));
       }
       return true;
     } catch (error) {
       console.error('🔒 Rate limiting reset error:', error);
       return false;
     }
+  }
+
+  private static normalizeDate(value: Date | number | null | undefined, fallback: Date): Date {
+    if (!value) {
+      return fallback;
+    }
+    return value instanceof Date ? value : new Date(value);
   }
 }
 

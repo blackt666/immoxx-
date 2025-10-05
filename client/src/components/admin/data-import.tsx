@@ -36,7 +36,7 @@ export default function DataImport() {
       } else {
         throw new Error('Import fehlgeschlagen');
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Import Fehler',
         description: 'Datei konnte nicht importiert werden',
@@ -71,7 +71,7 @@ export default function DataImport() {
       } else {
         throw new Error('Excel Import fehlgeschlagen');
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Excel Import Fehler',
         description: 'Excel-Datei konnte nicht importiert werden',
@@ -106,14 +106,13 @@ export default function DataImport() {
           title: 'Google Sheets Import erfolgreich',
           description: `${result.imported} Datensätze importiert`,
         });
-        setGoogleSheetUrl('');
       } else {
         throw new Error('Google Sheets Import fehlgeschlagen');
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Google Sheets Import Fehler',
-        description: 'Daten konnten nicht importiert werden',
+        description: 'Daten konnten nicht von Google Sheets importiert werden',
         variant: 'destructive',
       });
     } finally {

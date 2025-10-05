@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, ChevronDown, ChevronRight, Search, Building, Image, MessageSquare, Mail, Edit, Settings, Link, Activity, Target, FileText, BarChart3, Users, Calendar, Shield, Palette, Upload, Download, HelpCircle, LayoutDashboard, TrendingUp, Clock, Star, Euro, Percent } from "lucide-react";
+import { X, ChevronDown, ChevronRight, Building, Image, MessageSquare, Mail, Edit, Settings, Users, Calendar, HelpCircle, LayoutDashboard, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -648,7 +648,7 @@ export default function DashboardHelp({ isOpen, onClose, onTabChange }: Dashboar
                                 <h4 className="font-semibold text-gray-900 mb-2">{feature.title}</h4>
                                 <p className="text-gray-600 mb-3">{feature.description}</p>
                                 <div className="space-y-1">
-                                  <p className="font-medium text-sm text-gray-700">So funktioniert's:</p>
+                                  <p className="font-medium text-sm text-gray-700">So funktioniert&apos;s:</p>
                                   <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
                                     {feature.howTo.map((step, stepIndex) => (
                                       <li key={stepIndex}>{step}</li>

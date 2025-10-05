@@ -16,62 +16,32 @@ import templatesRouter from './routes/templates.js';
 import deepseekRouter from './routes/deepseek.js';
 import multer from 'multer';
 import { imageUpload, importUpload, backupUpload } from './lib/multer-config.js';
-import { generatePropertyValuation, PropertyValuationData, generateSEOKeywords } from "./openaiService.js";
-import { autoTranslateInquiry, translateResponse, detectLanguage } from "./translationService.js";
+import { PropertyValuationData, generateSEOKeywords } from "./openaiService.js";
+import { autoTranslateInquiry } from "./translationService.js";
 import * as schema from "@shared/schema";
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
-import { google } from 'googleapis';
 import { z } from 'zod';
-import { hashPassword, verifyPassword, isWeakPasswordHash, rehashPassword } from './lib/crypto.js';
+import { hashPassword, verifyPassword, isWeakPasswordHash } from './lib/crypto.js';
+
+const uploadDir = path.join(process.cwd(), 'uploads');
 
 // Import result type definitions
-interface ImportResult<T = any> {
+interface ImportResult<T> {
   data: T;
   rowIndex: number;
 }
 
 interface ImportError {
   rowIndex: number;
-  data: any;
+  data: Record<string, unknown>;
   error: string;
 }
 
-interface ValidationResult<T = any> {
+interface ValidationResult<T> {
   valid: ImportResult<T>[];
   invalid: ImportError[];
 }
-
-// Mock types and function for demonstration purposes if not provided
-// type PropertyValuationData = {
-//   propertyType: string;
-//   size: number;
-//   location: string;
-//   condition: string;
-//   yearBuilt?: number;
-//   bedrooms?: number;
-//   bathrooms?: number;
-//   features?: string[];
-//   nearbyAmenities?: string[];
-// };
-
-// async function generatePropertyValuation(data: PropertyValuationData): Promise<any> {
-//   // This is a placeholder for the actual AI valuation logic.
-//   // In a real scenario, this would call an external AI service.
-//   console.log("Calling actual AI valuation service with:", data);
-//   // Simulate a network error for testing the fallback
-//   // throw new Error("AI service is temporarily unavailable");
-//   return {
-//     estimatedValue: data.size * 10000, // Dummy calculation
-//     confidenceScore: 90,
-//     priceRange: { min: data.size * 9500, max: data.size * 10500 },
-//     factors: { location: { score: 80, impact: "Good location" }, condition: { score: 70, impact: "Fair condition" } },
-//     reasoning: "Based on AI analysis.",
-//     recommendations: ["Consider renovations."],
-//     marketTrends: "Stable market."
-//   };
-// }
-
 
 // Zod Schemas for Gallery Image validation
 const updateGalleryImageSchema = z.object({
@@ -96,10 +66,10 @@ const AUTH_ENABLED = process.env.NODE_ENV === 'production'
 
 // Using shared multer configurations from lib/multer-config.ts
 // Alias for backward compatibility
-const upload = imageUpload;
+// const upload = imageUpload;
 
 // Simple auth middleware - no-op when authentication is disabled
-const requireAuth = (req: any, res: any, next: any) => {
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   if (!AUTH_ENABLED) {
     // Authentication disabled - allow all requests
     next();
@@ -114,10 +84,10 @@ const requireAuth = (req: any, res: any, next: any) => {
 };
 
 // SECURITY: Comprehensive rate limiting for authentication and admin operations
-import { RateLimitingService, startRateLimitCleanup } from './services/rateLimitingService.js';
+import { RateLimitingService } from './services/rateLimitingService.js';
 
 // SECURITY: Enhanced login rate limiting with escalating restrictions - Database-backed
-const loginRateLimit = async (req: any, res: any, next: any) => {
+const loginRateLimit = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const clientId = req.ip || req.connection.remoteAddress || 'unknown';
     
@@ -168,7 +138,7 @@ const loginRateLimit = async (req: any, res: any, next: any) => {
   }
 };
 
-const adminRateLimit = async (req: any, res: any, next: any) => {
+const adminRateLimit = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const clientId = req.ip || req.connection.remoteAddress || 'unknown';
     
@@ -207,7 +177,7 @@ const adminRateLimit = async (req: any, res: any, next: any) => {
 };
 
 // Admin authorization middleware - requires admin role (SECURITY HARDENED) - no-op when auth disabled
-const requireAdmin = (req: any, res: any, next: any) => {
+const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!AUTH_ENABLED) {
     // Authentication disabled - allow all admin requests
     console.log('⚠️ Admin access granted: Authentication disabled (AUTH_ENABLED=false)');
@@ -233,7 +203,7 @@ const requireAdmin = (req: any, res: any, next: any) => {
 };
 
 // Helper function to filter sensitive data from backups with comprehensive security
-const filterSensitiveData = (data: any[], dataType: keyof typeof dataTypeSpecificFields | string) => {
+const filterSensitiveData = (data: Record<string, unknown>[], dataType: string): Record<string, unknown>[] => {
   // Comprehensive sensitive field denylist covering ALL possible sensitive data
   const universalSensitiveFields = [
     'password', 'passwordHash', 'hash', 'salt', 'resetToken', 'sessionToken', 'refreshToken',
@@ -255,7 +225,9 @@ const filterSensitiveData = (data: any[], dataType: keyof typeof dataTypeSpecifi
     general: [...universalSensitiveFields]
   };
   
-  const fieldsToRemove = (dataType in dataTypeSpecificFields) ? dataTypeSpecificFields[dataType as keyof typeof dataTypeSpecificFields] : dataTypeSpecificFields.general;
+  const fieldsToRemove = (dataType in dataTypeSpecificFields) 
+    ? dataTypeSpecificFields[dataType as keyof typeof dataTypeSpecificFields] 
+    : dataTypeSpecificFields.general;
   
   return data.map(item => {
     const filteredItem = { ...item };
@@ -280,7 +252,7 @@ const filterSensitiveData = (data: any[], dataType: keyof typeof dataTypeSpecifi
       
       // Filter nested objects recursively
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        filteredItem[key] = filterNestedSensitiveData(value, universalSensitiveFields);
+        filteredItem[key] = filterNestedSensitiveData(value as Record<string, unknown>, universalSensitiveFields);
       }
       
       // Filter arrays of objects
@@ -298,7 +270,7 @@ const filterSensitiveData = (data: any[], dataType: keyof typeof dataTypeSpecifi
 };
 
 // Helper function to recursively filter nested sensitive data
-const filterNestedSensitiveData = (obj: any, sensitiveFields: string[]): any => {
+const filterNestedSensitiveData = (obj: Record<string, unknown>, sensitiveFields: string[]): Record<string, unknown> => {
   const filtered = { ...obj };
   
   Object.keys(filtered).forEach(key => {
@@ -313,7 +285,7 @@ const filterNestedSensitiveData = (obj: any, sensitiveFields: string[]): any => 
     
     // Recurse for nested objects
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      filtered[key] = filterNestedSensitiveData(value, sensitiveFields);
+      filtered[key] = filterNestedSensitiveData(value as Record<string, unknown>, sensitiveFields);
     }
     
     // Recurse for arrays
@@ -334,15 +306,15 @@ interface SecurityEvent {
   timestamp: string;
   event: string;
   clientId: string;
-  details?: any;
+  details?: Record<string, unknown>;
   severity: 'low' | 'medium' | 'high' | 'critical';
 }
 
-const logSecurityEvent = (eventType: string, details: any = {}) => {
+const logSecurityEvent = (eventType: string, details: Record<string, unknown> = {}) => {
   const event: SecurityEvent = {
     timestamp: new Date().toISOString(),
     event: eventType,
-    clientId: details.clientId || 'unknown',
+    clientId: (details.clientId as string) || 'unknown',
     details: { ...details },
     severity: getSeverityLevel(eventType)
   };
@@ -379,7 +351,7 @@ const ensureAdminUser = async (username: string, password: string): Promise<void
         // Migrate plaintext password to hashed password
         console.log('🔒 SECURITY: Migrating admin user to hashed password...');
         const hashedPassword = hashPassword(password);
-        await storage.updateUser(existingUser.id, { password: hashedPassword });
+        await storage.updateUser(String(existingUser.id), { password: hashedPassword });
         logSecurityEvent('password_migration_completed', { 
           userId: existingUser.id, 
           username: existingUser.username 
@@ -479,7 +451,7 @@ const authenticateAdmin = async (username: string, password: string, clientId: s
         
         try {
           const newStrongHash = hashPassword(password);
-          await storage.updateUser(user.id, { password: newStrongHash });
+          await storage.updateUser(String(user.id), { password: newStrongHash });
           
           logSecurityEvent('auth_password_migrated', { 
             username: user.username, 
@@ -652,8 +624,8 @@ export async function registerRoutes(app: Express) {
   // Enhanced health endpoint with ready state - matches main health endpoint structure
   app.get("/api/health", (req, res) => {
     // Access server state from global scope (same as main server health endpoint)
-    const serverReady = (global as any).serverReady || false;
-    const initializationError = (global as any).initializationError || null;
+    const serverReady = (global as { serverReady?: boolean }).serverReady || false;
+    const initializationError = (global as { initializationError?: Error }).initializationError || null;
     
     res.json({
       status: serverReady ? 'ready' : 'starting',
@@ -679,13 +651,8 @@ export async function registerRoutes(app: Express) {
   });
 
   // Logout endpoint
-  app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('Logout error:', err);
-        return res.status(500).json({ message: "Logout-Fehler" });
-      }
-      res.clearCookie('connect.sid');
+    app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy(() => {
       res.json({ message: "Erfolgreich abgemeldet" });
     });
   });
@@ -740,7 +707,7 @@ export async function registerRoutes(app: Express) {
         const userData = {
           id: user.id,
           username: user.username,
-          name: user.name || "Administrator",
+          name: user.username,
           role: user.role || "admin",
           loginTime: new Date().toISOString()
         };
@@ -757,7 +724,7 @@ export async function registerRoutes(app: Express) {
           }
           
           // Set session data after regeneration
-          req.session.user = userData;
+          req.session.user = { ...userData, id: String(userData.id) };
           req.session.isAuthenticated = true;
           
           // Save session and send response
@@ -802,15 +769,8 @@ export async function registerRoutes(app: Express) {
           res.status(401).json({ message: "Ungültige Anmeldedaten" });
         }, remainingTime);
       }
-    } catch (error) {
-      const loginDuration = Date.now() - startTime;
-      logSecurityEvent('auth_failure_server_error', { 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        clientId,
-        loginDuration
-      });
-      
-      // SECURITY: Don't expose internal error details
+    } catch (e) {
+      console.error('Login error:', e);
       res.status(500).json({ message: "Server-Fehler" });
     }
   });
@@ -855,8 +815,8 @@ export async function registerRoutes(app: Express) {
       if (!res.headersSent) {
         res.json(properties);
       }
-    } catch (error) {
-      console.error("Error fetching properties:", error);
+    } catch (e) {
+      console.error("Error fetching properties:", e);
       if (!res.headersSent) {
         res.status(500).json({ error: 'Failed to fetch properties' });
       }
@@ -872,7 +832,8 @@ export async function registerRoutes(app: Express) {
         return res.status(404).json({ message: "Property not found" });
       }
       res.json(property);
-    } catch (error) {
+    } catch (e) {
+      console.error("Failed to get property:", e);
       res.status(500).json({ message: "Failed to get property" });
     }
   });
@@ -881,8 +842,8 @@ export async function registerRoutes(app: Express) {
     try {
       const property = await storage.createProperty(req.body);
       res.status(201).json(property);
-    } catch (error) {
-      console.error("❌ Create property error:", error);
+    } catch (e) {
+      console.error("❌ Create property error:", e);
       res.status(500).json({ message: "Failed to create property" });
     }
   });
@@ -897,11 +858,11 @@ export async function registerRoutes(app: Express) {
 
       const property = await storage.updateProperty(req.params.id, req.body);
       res.json(property);
-    } catch (error) {
-      console.error("❌ Update property error:", error);
+    } catch (e) {
+      console.error("❌ Update property error:", e);
       res.status(500).json({ 
         message: "Failed to update property",
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: e instanceof Error ? e.message : 'Unknown error'
       });
     }
   });
@@ -916,11 +877,11 @@ export async function registerRoutes(app: Express) {
 
       await storage.deleteProperty(req.params.id);
       res.json({ message: "Property deleted successfully" });
-    } catch (error) {
-      console.error("❌ Delete property error:", error);
+    } catch (e) {
+      console.error("❌ Delete property error:", e);
       res.status(500).json({ 
         message: "Failed to delete property",
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: e instanceof Error ? e.message : 'Unknown error'
       });
     }
   });
@@ -933,7 +894,7 @@ export async function registerRoutes(app: Express) {
       // Initialize storage first
       await storage.ensureInitialized();
 
-      const { category, limit, cleanup } = req.query;
+      const { category, limit } = req.query;
       const result = await storage.getGalleryImages({
         limit: limit ? parseInt(limit as string) : undefined,
         category: category as string
@@ -946,15 +907,15 @@ export async function registerRoutes(app: Express) {
         url: `/api/gallery/${img.id}/image`
       }));
 
-      console.log(`📸 Returning ${images.length} images with fixed URLs`);
+      console.log("📸 Returning ${images.length} images with fixed URLs");
       res.setHeader('Cache-Control', 'no-cache');
       res.json(images);
-    } catch (error) {
-      console.error("❌ Gallery error:", error);
+    } catch (e) {
+      console.error("❌ Gallery error:", e);
       res.setHeader('Cache-Control', 'no-cache');
       res.status(500).json({ 
         message: "Failed to fetch gallery images",
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: e instanceof Error ? e.message : 'Unknown error'
       });
     }
   });
@@ -990,11 +951,11 @@ export async function registerRoutes(app: Express) {
 
       console.log("✅ Image created in database:", image.id);
       res.json({ success: true, image });
-    } catch (error) {
-      console.error("❌ Upload error:", error);
+    } catch (e) {
+      console.error("❌ Upload error:", e);
       res.status(500).json({ 
         error: "Upload failed", 
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: e instanceof Error ? e.message : 'Unknown error'
       });
     }
   });
@@ -1047,10 +1008,8 @@ export async function registerRoutes(app: Express) {
       const {
         title,
         type,
-        category,
         originalName,
         fileSize,
-        uploadTimestamp,
         dimensions,
         aspectRatio,
         verified360
@@ -1092,11 +1051,11 @@ export async function registerRoutes(app: Express) {
           verified360: verified360 === 'true'
         }
       });
-    } catch (error) {
-      console.error("❌ 360° Upload error:", error);
+    } catch (e) {
+      console.error("❌ 360° Upload error:", e);
       res.status(500).json({ 
         error: "360° upload failed", 
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: e instanceof Error ? e.message : 'Unknown error'
       });
     }
   });
@@ -1125,8 +1084,8 @@ export async function registerRoutes(app: Express) {
       } else {
         res.status(404).json({ message: "Image file not found" });
       }
-    } catch (error) {
-      console.error("❌ Image serve error:", error);
+    } catch (e) {
+      console.error("❌ Image serve error:", e);
       res.status(500).json({ message: "Failed to serve image" });
     }
   });
@@ -1139,8 +1098,8 @@ export async function registerRoutes(app: Express) {
         return res.status(404).json({ message: "Image not found" });
       }
       res.json(image);
-    } catch (error) {
-      console.error("❌ Get gallery image error:", error);
+    } catch (e) {
+      console.error("❌ Get gallery image error:", e);
       res.status(500).json({ message: "Failed to get image metadata" });
     }
   });
@@ -1175,8 +1134,8 @@ export async function registerRoutes(app: Express) {
         message: "Image metadata updated successfully",
         image: updatedImage 
       });
-    } catch (error) {
-      console.error("❌ Update gallery image error:", error);
+    } catch (e) {
+      console.error("❌ Update gallery image error:", e);
       res.status(500).json({ message: "Failed to update image metadata" });
     }
   });
@@ -1201,7 +1160,7 @@ export async function registerRoutes(app: Express) {
 
       // Only update provided fields
       const updateData = Object.fromEntries(
-        Object.entries(validationResult.data).filter(([_, value]) => value !== undefined)
+        Object.entries(validationResult.data).filter(([, value]) => value !== undefined)
       );
 
       if (Object.keys(updateData).length === 0) {
@@ -1216,8 +1175,8 @@ export async function registerRoutes(app: Express) {
         message: "Image metadata updated successfully",
         image: updatedImage 
       });
-    } catch (error) {
-      console.error("❌ Patch gallery image error:", error);
+    } catch (e) {
+      console.error("❌ Patch gallery image error:", e);
       res.status(500).json({ message: "Failed to update image metadata" });
     }
   });
@@ -1237,10 +1196,10 @@ export async function registerRoutes(app: Express) {
           fs.unlinkSync(imagePath);
           console.log(`🗑️ File deleted: ${imagePath}`);
         }
-      } catch (fileError: any) {
+      } catch (fileError: unknown) {
         // Ignore ENOENT (file not found) errors - database cleanup still proceeds
-        if (fileError.code !== 'ENOENT') {
-          console.warn(`⚠️ File deletion warning for ${imagePath}:`, fileError.message);
+        if ((fileError as { code: string; message: string }).code !== 'ENOENT') {
+          console.warn(`⚠️ File deletion warning for ${imagePath}:`, (fileError as { code: string; message: string }).message);
         }
       }
 
@@ -1249,9 +1208,12 @@ export async function registerRoutes(app: Express) {
       
       console.log(`✅ Image deleted successfully: ${req.params.id}`);
       res.json({ message: "Image deleted successfully" });
-    } catch (error) {
-      console.error("❌ Delete image error:", error);
-      res.status(500).json({ message: "Failed to delete image" });
+    } catch (e) {
+      console.error("❌ Delete image error:", e);
+      res.status(500).json({ 
+        message: "Failed to delete image",
+        error: e instanceof Error ? e.message : 'Unknown error'
+      });
     }
   });
 
@@ -1285,8 +1247,8 @@ export async function registerRoutes(app: Express) {
         message: "Image metadata updated successfully",
         image: updatedImage 
       });
-    } catch (error) {
-      console.error("❌ Update gallery image metadata error:", error);
+    } catch (e) {
+      console.error("❌ Update gallery image metadata error:", e);
       res.status(500).json({ message: "Failed to update image metadata" });
     }
   });
@@ -1303,7 +1265,8 @@ export async function registerRoutes(app: Express) {
       });
 
       res.json(result);
-    } catch (error) {
+    } catch (e) {
+      console.error("Error fetching inquiries:", e);
       res.status(500).json({ message: "Failed to get inquiries" });
     }
   });
@@ -1338,8 +1301,8 @@ export async function registerRoutes(app: Express) {
         message: successMessage,
         originalLanguage: translationResult.originalLanguage
       });
-    } catch (error) {
-      console.error("❌ Create inquiry error:", error);
+    } catch (e) {
+      console.error("❌ Create inquiry error:", e);
       res.status(500).json({ message: "Failed to create inquiry" });
     }
   });
@@ -1349,7 +1312,8 @@ export async function registerRoutes(app: Express) {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
-    } catch (error) {
+    } catch (e) {
+      console.error("Failed to get stats:", e);
       res.status(500).json({ message: "Failed to get stats" });
     }
   });
@@ -1398,8 +1362,8 @@ export async function registerRoutes(app: Express) {
         // const valuation = await generatePropertyValuation(propertyData);
         // console.log('✅ AI Valuation successful');
         // res.json(valuation);
-      } catch (aiError) {
-        console.log('⚠️ Temporarily using mock data for testing');
+      } catch (e) {
+        console.log('⚠️ Temporarily using mock data for testing', e);
 
         // Fallback to realistic mock data
         const mockValuation = {
@@ -1505,8 +1469,8 @@ export async function registerRoutes(app: Express) {
         try {
           // Simulate database lookup - in real app this would query your DB
           siteContent = req.session?.siteContent || null;
-        } catch (dbError) {
-          console.log("📱 Database not available, using static content");
+        } catch (e) {
+          console.log("📱 Database not available, using static content", e);
           siteContent = null;
         }
 
@@ -1657,7 +1621,7 @@ export async function registerRoutes(app: Express) {
         }
 
         // Update or create section
-        const existingIndex = req.session.siteContent.findIndex((item: any) => item.section === section);
+        const existingIndex = req.session.siteContent.findIndex((item: { section: string }) => item.section === section);
         const updatedSection = {
           id: existingIndex >= 0 ? req.session.siteContent[existingIndex].id : Date.now().toString(),
           section,
@@ -1684,9 +1648,9 @@ export async function registerRoutes(app: Express) {
     // ========================================
 
     // Helper function to validate and map data based on type
-    const validateAndMapData = (data: any[], importType: 'properties' | 'customers' | 'inquiries'): ValidationResult => {
-      const results: ValidationResult = { 
-        valid: [] as ImportResult[], 
+    const validateAndMapData = (data: Record<string, unknown>[], importType: 'properties' | 'customers' | 'inquiries'): ValidationResult<Record<string, unknown>> => {
+      const results: ValidationResult<Record<string, unknown>> = { 
+        valid: [] as ImportResult<Record<string, unknown>>[], 
         invalid: [] as ImportError[] 
       };
 
@@ -1737,7 +1701,7 @@ export async function registerRoutes(app: Express) {
             });
           }
 
-          results.valid.push({ data: validatedData, rowIndex: index + 1 });
+          results.valid.push({ data: validatedData as Record<string, unknown>, rowIndex: index + 1 });
         } catch (error) {
           results.invalid.push({ 
             rowIndex: index + 1, 
@@ -1775,7 +1739,7 @@ export async function registerRoutes(app: Express) {
 
         // Determine import type based on headers or request
         const importType = req.body.importType || 'properties';
-        const validationResult = validateAndMapData(parseResult.data, importType);
+        const validationResult = validateAndMapData(parseResult.data as Record<string, unknown>[], importType);
 
         // Import valid records
         let imported = 0;
@@ -1849,8 +1813,8 @@ export async function registerRoutes(app: Express) {
         // Convert to header-based objects
         const headers = jsonData[0] as string[];
         const dataRows = jsonData.slice(1).map((row) => {
-          const rowArray = row as any[];
-          const obj: Record<string, any> = {};
+          const rowArray = row as unknown[];
+          const obj: Record<string, unknown> = {};
           headers.forEach((header, index) => {
             obj[header] = rowArray[index];
           });
@@ -1950,7 +1914,7 @@ export async function registerRoutes(app: Express) {
             });
           }
 
-          const validationResult = validateAndMapData(parseResult.data, importType);
+          const validationResult = validateAndMapData(parseResult.data as Record<string, unknown>[], importType);
 
           // Import valid records
           let imported = 0;
@@ -1967,6 +1931,7 @@ export async function registerRoutes(app: Express) {
               }
               imported++;
             } catch (error) {
+             
               errors.push({
                 row: item.rowIndex,
                 error: error instanceof Error ? error.message : 'Import failed'
@@ -1984,12 +1949,13 @@ export async function registerRoutes(app: Express) {
             failed: validationResult.invalid.length + errors.length
           });
 
-        } catch (sheetsError) {
+        } catch (e) {
           res.status(400).json({ 
             error: 'Failed to access Google Sheets', 
             details: 'Please ensure the sheet is publicly accessible or provide a public CSV export link',
             suggestion: 'Make sure to share the sheet with "Anyone with the link can view" permissions'
           });
+          console.error(e);
         }
 
       } catch (error) {
@@ -2029,7 +1995,7 @@ export async function registerRoutes(app: Express) {
     app.get('/api/templates/excel-template.xlsx', (req, res) => {
       const { type = 'properties' } = req.query;
       
-      let data: any[][] = [];
+      let data: unknown[][] = [];
       
       if (type === 'properties') {
         data = [
@@ -2134,9 +2100,9 @@ export async function registerRoutes(app: Express) {
         // COMPREHENSIVE sensitive data filtering for ALL entities (SECURITY HARDENED)
         console.log('🔒 Applying comprehensive sensitive data filtering to ALL datasets...');
         const filteredUsers = filterSensitiveData(users, 'users');
-        const filteredProperties = filterSensitiveData(properties, 'properties'); // SECURITY FIX: Now filtered
+        const filteredProperties = filterSensitiveData(properties as unknown as Record<string, unknown>[], 'properties'); // SECURITY FIX: Now filtered
         const filteredCustomers = filterSensitiveData(customers, 'customers');
-        const filteredInquiries = filterSensitiveData(inquiries, 'inquiries');
+        const filteredInquiries = filterSensitiveData(inquiries as unknown as Record<string, unknown>[], 'inquiries');
         const filteredNewsletterSubscribers = filterSensitiveData(newsletterSubscribers, 'newsletterSubscribers'); // SECURITY FIX: Now filtered
         const filteredNewsletters = filterSensitiveData(newsletters, 'newsletters'); // SECURITY FIX: Now filtered
         const filteredCustomerInteractions = filterSensitiveData(customerInteractions, 'customerInteractions');
@@ -2149,7 +2115,7 @@ export async function registerRoutes(app: Express) {
         const filteredCalendarEvents = filterSensitiveData(calendarEvents, 'calendarEvents');
         const filteredCalendarSyncLogs = filterSensitiveData(calendarSyncLogs, 'calendarSyncLogs');
         const filteredSiteContent = filterSensitiveData(siteContent, 'siteContent');
-        const filteredGalleryImages = filterSensitiveData(galleryImages, 'galleryImages');
+        const filteredGalleryImages = filterSensitiveData(galleryImages as unknown as Record<string, unknown>[], 'galleryImages');
 
         // Create enhanced backup object with comprehensive security metadata
         const backupData = {
@@ -2214,8 +2180,8 @@ export async function registerRoutes(app: Express) {
         };
 
         // Simplified backup without encryption
-        let finalBackupData = backupData;
-        let filename = `bodensee-backup-${new Date().toISOString().split('T')[0]}-${req.session.user?.username || 'admin'}.json`;
+        const finalBackupData = backupData;
+        const filename = `bodensee-backup-${new Date().toISOString().split('T')[0]}-${req.session.user?.username || 'admin'}.json`;
         
         // Note: Encryption functionality removed during authentication simplification
         if (shouldEncrypt && encryptionPassword) {
@@ -2259,6 +2225,7 @@ export async function registerRoutes(app: Express) {
     // Restore endpoint - Import data from uploaded JSON backup with transaction safety (SECURITY HARDENED)
     app.post("/api/admin/restore", adminRateLimit, requireAdmin, backupUpload.single('backup'), async (req, res) => {
       let restoredData = false;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       let transaction;
       
       try {
@@ -2334,7 +2301,7 @@ export async function registerRoutes(app: Express) {
 
         // Start database transaction for atomic restore
         console.log('🔄 Starting database transaction for atomic restore...');
-        transaction = await db.transaction(async (tx) => {
+        await db.transaction(async (tx) => {
           // Import data in order of dependencies (users first, then properties, etc.)
           const importOrder = [
             'users',
@@ -2481,8 +2448,11 @@ export async function registerRoutes(app: Express) {
         fs.unlinkSync(req.file.path);
 
         const totalRecords = results.imported;
-        const hasErrors = results.errors.length > 0;
-        const hasWarnings = results.warnings.length > 0;
+        const hasValidationErrors = results.errors.length > 0;
+        const hasValidationWarnings = results.warnings.length > 0;
+        if (hasValidationErrors || hasValidationWarnings) {
+          console.log("Validation issues found:", { errors: results.errors, warnings: results.warnings });
+        }
 
         console.log(`✅ Restore completed successfully!`);
         console.log(`📊 Imported ${totalRecords} total records`);
@@ -2548,7 +2518,8 @@ export async function registerRoutes(app: Express) {
         error: unknown,
         req: Request,
         res: Response,
-        next: NextFunction,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        _next: NextFunction,
       ) => {
         console.error("🔥 Server error caught:", error);
         

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,10 +18,7 @@ import { z } from 'zod';
 import { 
   Calendar, 
   Smartphone, 
-  Settings, 
   AlertCircle, 
-  CheckCircle, 
-  XCircle, 
   RefreshCw,
   Trash2,
   Plus,
@@ -43,30 +40,6 @@ interface CalendarConnection {
   lastSyncAt?: string;
   createdAt: string;
   updatedAt: string;
-}
-
-interface SyncStats {
-  totalOperations: number;
-  successful: number;
-  failed: number;
-  skipped: number;
-  byOperation: {
-    create: number;
-    update: number;
-    delete: number;
-    sync: number;
-  };
-  byDirection: {
-    crmToCalendar: number;
-    calendarToCrm: number;
-  };
-  lastSync?: string;
-  recentErrors: Array<{
-    operation: string;
-    direction: string;
-    error: string;
-    timestamp: string;
-  }>;
 }
 
 // Form schemas
@@ -142,7 +115,7 @@ const CalendarIntegration = () => {
         description: 'Redirecting to Google for authorization...',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Connection Failed',
         description: error.message || 'Failed to connect Google Calendar',
@@ -168,7 +141,7 @@ const CalendarIntegration = () => {
         description: 'Successfully connected to Apple Calendar!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Connection Failed',
         description: error.message || 'Failed to connect Apple Calendar',
@@ -178,7 +151,7 @@ const CalendarIntegration = () => {
   });
 
   const updateConnectionMutation = useMutation({
-    mutationFn: ({ connectionId, updates }: { connectionId: string; updates: any }) =>
+    mutationFn: ({ connectionId, updates }: { connectionId: string; updates: Record<string, unknown> }) =>
       apiRequest(`/api/calendar/connections/${connectionId}`, {
         method: 'PUT',
         body: JSON.stringify({ ...updates, agentId }),
@@ -191,7 +164,7 @@ const CalendarIntegration = () => {
         description: 'Calendar connection settings updated successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Update Failed',
         description: error.message || 'Failed to update connection settings',
@@ -213,7 +186,7 @@ const CalendarIntegration = () => {
         description: 'Calendar connection removed successfully.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Delete Failed',
         description: error.message || 'Failed to delete connection',
@@ -229,7 +202,7 @@ const CalendarIntegration = () => {
         body: JSON.stringify({ agentId }),
         headers: { 'Content-Type': 'application/json' },
       }),
-    onSuccess: (data, connectionId) => {
+    onSuccess: (data: { connected: boolean; message: string; }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/calendar/connections'] });
       toast({
         title: data.connected ? 'Connection Successful' : 'Connection Failed',
@@ -240,7 +213,7 @@ const CalendarIntegration = () => {
   });
 
   const syncMutation = useMutation({
-    mutationFn: ({ connectionId, options }: { connectionId?: string; options: any }) => {
+    mutationFn: ({ connectionId, options }: { connectionId?: string; options: Record<string, unknown> }) => {
       const url = connectionId 
         ? `/api/calendar/connections/${connectionId}/sync`
         : '/api/calendar/sync';
@@ -250,7 +223,7 @@ const CalendarIntegration = () => {
         headers: { 'Content-Type': 'application/json' },
       });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: { results?: unknown; result?: unknown }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/calendar/connections'] });
       queryClient.invalidateQueries({ queryKey: ['/api/calendar/sync/stats'] });
       setShowSyncDialog(false);
@@ -260,7 +233,7 @@ const CalendarIntegration = () => {
         description: `Sync completed successfully. ${JSON.stringify(data.results || data.result)}`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Sync Failed',
         description: error.message || 'Calendar sync failed',
@@ -754,7 +727,7 @@ const CalendarIntegration = () => {
                   <div>
                     <h3 className="font-semibold mb-3">Recent Errors</h3>
                     <div className="space-y-2">
-                      {stats.totalStats.recentErrors.slice(0, 5).map((error: any, index: number) => (
+                      {stats.totalStats.recentErrors.slice(0, 5).map((error: { operation: string; direction: string; error: string; timestamp: string; }, index: number) => (
                         <div key={index} className="bg-red-50 border border-red-200 rounded p-3">
                           <div className="flex items-center gap-2 text-sm">
                             <AlertCircle className="h-4 w-4 text-red-600" />
@@ -777,11 +750,9 @@ const CalendarIntegration = () => {
       <Dialog open={showSyncDialog} onOpenChange={setShowSyncDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              Manual Sync - {selectedConnection ? selectedConnection.calendarName : 'All Calendars'}
-            </DialogTitle>
+            <DialogTitle>Manual Sync Options</DialogTitle>
             <DialogDescription>
-              Configure sync options and trigger manual synchronization.
+              Configure and run a manual sync for {selectedConnection ? selectedConnection.calendarName : 'all calendars'}.
             </DialogDescription>
           </DialogHeader>
           <Form {...syncForm}>
@@ -794,14 +765,14 @@ const CalendarIntegration = () => {
                     <FormLabel>Sync Direction</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger data-testid="select-sync-direction">
-                          <SelectValue />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select sync direction" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="bidirectional">Bidirectional</SelectItem>
                         <SelectItem value="crm_to_calendar">CRM → Calendar</SelectItem>
                         <SelectItem value="calendar_to_crm">Calendar → CRM</SelectItem>
-                        <SelectItem value="bidirectional">Bidirectional</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -812,18 +783,17 @@ const CalendarIntegration = () => {
                 control={syncForm.control}
                 name="forceSync"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">Force Sync</FormLabel>
+                      <FormLabel>Force Sync</FormLabel>
                       <FormDescription>
-                        Sync all items regardless of change detection.
+                        Re-sync all events, ignoring previous sync status.
                       </FormDescription>
                     </div>
                     <FormControl>
                       <Switch
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        data-testid="switch-force-sync"
                       />
                     </FormControl>
                   </FormItem>
@@ -833,42 +803,30 @@ const CalendarIntegration = () => {
                 control={syncForm.control}
                 name="dryRun"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">Dry Run</FormLabel>
+                      <FormLabel>Dry Run</FormLabel>
                       <FormDescription>
-                        Preview changes without actually syncing.
+                        Simulate sync without making any actual changes.
                       </FormDescription>
                     </div>
                     <FormControl>
                       <Switch
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        data-testid="switch-dry-run"
                       />
                     </FormControl>
                   </FormItem>
                 )}
               />
               <div className="flex gap-2">
-                <Button 
-                  type="submit" 
-                  disabled={syncMutation.isPending}
-                  data-testid="button-submit-sync"
-                >
+                <Button type="submit" disabled={syncMutation.isPending}>
                   {syncMutation.isPending ? (
                     <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                  )}
-                  Start Sync
+                  ) : null}
+                  Run Sync
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setShowSyncDialog(false)}
-                  data-testid="button-cancel-sync"
-                >
+                <Button type="button" variant="outline" onClick={() => setShowSyncDialog(false)}>
                   Cancel
                 </Button>
               </div>

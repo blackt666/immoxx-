@@ -1,9 +1,8 @@
 import { Router } from 'express';
 import { db } from '../db';
 import { leads, customers, leadSchema } from '@shared/schema';
-import { eq, and, desc } from 'drizzle-orm';
-import { CRM_STAGES, DEAL_TYPES, validateProbability } from '@shared/constants';
-import { z } from 'zod';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { CRM_STAGES, DEAL_TYPES, validateProbability, CRMStage, DealType } from '@shared/constants';
 
 const router = Router();
 
@@ -26,22 +25,16 @@ router.get('/api/crm/leads', async (req, res) => {
     
     // Validate stage filter
     if (stage && stage !== 'all') {
-      if (!Object.values(CRM_STAGES).includes(stage as string)) {
-        return res.status(400).json({ 
-          error: 'Invalid stage filter',
-          validStages: Object.values(CRM_STAGES)
-        });
+      if (!Object.values(CRM_STAGES).includes(stage as CRMStage)) {
+        return res.status(400).json({ error: 'Invalid stage value' });
       }
       conditions.push(eq(leads.stage, stage as string));
     }
     
     // Validate dealType filter  
     if (dealType && dealType !== 'all') {
-      if (!Object.values(DEAL_TYPES).includes(dealType as string)) {
-        return res.status(400).json({
-          error: 'Invalid deal type filter',
-          validTypes: Object.values(DEAL_TYPES)
-        });
+      if (!Object.values(DEAL_TYPES).includes(dealType as DealType)) {
+        return res.status(400).json({ error: 'Invalid deal type' });
       }
       conditions.push(eq(leads.dealType, dealType as string));
     }
@@ -176,11 +169,11 @@ router.put('/api/crm/leads/:id', async (req, res) => {
     }
     
     // Update lead
-    const [updatedLead] = await db
+    await db
       .update(leads)
-      .set({
+      .set({ 
         ...updateData,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date()
       })
       .where(eq(leads.id, leadId))
       .returning();

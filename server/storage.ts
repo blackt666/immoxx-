@@ -1,58 +1,136 @@
 import { db, pool } from "./db.js";
 import * as schema from "@shared/schema";
-import type { DesignSettings } from "@shared/schema";
+import type {
+  DesignSettings,
+  InsertProperty,
+  InsertInquiry,
+  InsertCustomer,
+  InsertGalleryImage,
+  Inquiry as DbInquiry,
+  GalleryImage as DbGalleryImage
+} from "@shared/schema";
 import { eq, desc, and, sql, like } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 import { PerformanceMonitor } from "./lib/performance-monitor.js";
 
+type PropertyMarketAnalysis = {
+  pricePerSqm?: number | null;
+  marketTrend?: string | null;
+  comparableProperties?: string | null;
+  investmentPotential?: string | null;
+};
+
+type PropertyExtras = {
+  features?: string[];
+  images?: string[];
+  energyClass?: string | null;
+  agentNotes?: string | null;
+  condition?: string | null;
+  nearbyAmenities?: string[];
+  heatingType?: string | null;
+  plotSize?: number | null;
+  garageSpaces?: number | null;
+  basement?: string | null;
+  balconyTerrace?: string | null;
+  renovation?: string | null;
+  lakeDistance?: string | null;
+  publicTransport?: string | null;
+  internetSpeed?: string | null;
+  noiseLevel?: string | null;
+  viewQuality?: string | null;
+  flooring?: string | null;
+  kitchen?: string | null;
+  bathroom?: string | null;
+  security?: string | null;
+  smartHome?: string | null;
+  elevator?: string | null;
+  wellness?: string | null;
+  fireplace?: string | null;
+  airConditioning?: string | null;
+  solarSystem?: string | null;
+  electricCar?: string | null;
+  storageSpace?: string | null;
+  marketAnalysis?: PropertyMarketAnalysis | null;
+  seoMeta?: string | null;
+  [key: string]: unknown;
+};
+
+type DbPropertyRow = typeof schema.properties.$inferSelect;
+type DbPropertyInsert = typeof schema.properties.$inferInsert;
+
 export interface Property {
   id: string;
   title: string;
-  description?: string;
+  description: string | null;
   type: string;
-  location: string;
-  price: number;
-  size: number;
-  rooms: number;
-  bathrooms: number;
-  bedrooms: number;
   status: string;
+  price: number;
+  currency: string;
+  size: number | null;
+  rooms: number | null;
+  bathrooms: number | null;
+  bedrooms: number | null;
+  location: string;
+  city: string;
+  postalCode?: string | null;
+  region?: string | null;
+  country: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  yearBuilt?: number | null;
+  hasGarden?: boolean | null;
+  hasBalcony?: boolean | null;
+  hasParking?: boolean | null;
+  energyRating?: string | null;
+  slug?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  publishedAt?: string | null;
   features: string[];
   images: string[];
+  energyClass?: string | null;
+  agentNotes?: string | null;
+  condition?: string | null;
+  nearbyAmenities?: string[];
+  heatingType?: string | null;
+  plotSize?: number | null;
+  garageSpaces?: number | null;
+  basement?: string | null;
+  balconyTerrace?: string | null;
+  renovation?: string | null;
+  lakeDistance?: string | null;
+  publicTransport?: string | null;
+  internetSpeed?: string | null;
+  noiseLevel?: string | null;
+  viewQuality?: string | null;
+  flooring?: string | null;
+  kitchen?: string | null;
+  bathroom?: string | null;
+  security?: string | null;
+  smartHome?: string | null;
+  elevator?: string | null;
+  wellness?: string | null;
+  fireplace?: string | null;
+  airConditioning?: string | null;
+  solarSystem?: string | null;
+  electricCar?: string | null;
+  storageSpace?: string | null;
+  marketAnalysis?: PropertyMarketAnalysis | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface GalleryImage {
-  id: string;
-  filename: string;
-  originalName: string;
-  url: string;
-  alt?: string;
-  category: string;
-  propertyId?: string;
-  size: number;
-  uploadedAt: string;
-}
+export type GalleryImage = DbGalleryImage;
+export type Inquiry = DbInquiry;
 
-export interface Inquiry {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  subject: string;
-  message: string;
-  propertyId?: string;
-  status: string;
-  createdAt: string;
-}
+type CacheEntry = { data: unknown; expires: number };
 
 class Storage {
   private initialized = false;
   
   // Simple in-memory cache with TTL
-  private cache = new Map<string, { data: any; expires: number }>();
+  private cache = new Map<string, CacheEntry>();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   
   private getFromCache<T>(key: string): T | null {
@@ -72,7 +150,7 @@ class Storage {
     return cached.data as T;
   }
   
-  private setCache(key: string, data: any, ttl?: number): void {
+  private setCache(key: string, data: unknown, ttl?: number): void {
     const expires = Date.now() + (ttl || this.CACHE_TTL);
     this.cache.set(key, { data, expires });
     
@@ -101,13 +179,13 @@ class Storage {
   }
 
   // Batch Operations for Performance
-  async batchInsertProperties(properties: Partial<Property>[]): Promise<{ success: number; failed: number; errors: any[] }> {
+  async batchInsertProperties(properties: Partial<Property>[]): Promise<{ success: number; failed: number; errors: unknown[] }> {
     if (properties.length === 0) return { success: 0, failed: 0, errors: [] };
     
     const batchSize = 100; // Process in batches of 100
     let success = 0;
     let failed = 0;
-    const errors: any[] = [];
+    const errors: unknown[] = [];
 
     try {
       // Process in batches to avoid overwhelming the database
@@ -117,20 +195,7 @@ class Storage {
         try {
           await PerformanceMonitor.timeDbOperation('batchInsertProperties', async () => {
             await db.transaction(async (tx) => {
-              const insertData = batch.map(prop => ({
-                title: prop.title!,
-                description: prop.description,
-                type: prop.type!,
-                location: prop.location!,
-                price: prop.price?.toString(),
-                area: prop.size,
-                rooms: prop.rooms,
-                bathrooms: prop.bathrooms,
-                bedrooms: prop.bedrooms,
-                status: prop.status || 'available',
-                features: prop.features || [],
-                images: prop.images || []
-              }));
+              const insertData: InsertProperty[] = batch.map((prop) => this.composeInsertProperty(prop));
 
               await tx.insert(schema.properties).values(insertData);
               success += batch.length;
@@ -295,7 +360,7 @@ class Storage {
       const result = await PerformanceMonitor.timeDbOperation('getAllProperties', async () => {
         const { limit = 100, offset = 0, status = 'available', includeDeleted = false } = options;
         
-        let whereConditions = [];
+        const whereConditions = [];
         if (!includeDeleted) {
           whereConditions.push(sql`${schema.properties.status} != 'deleted'`);
         }
@@ -443,37 +508,42 @@ class Storage {
   }
 
   async createProperty(data: Partial<Property>): Promise<Property> {
+    const insertValues = this.composeInsertProperty(data);
+
     const [property] = await db.insert(schema.properties)
-      .values({
-        title: data.title!,
-        description: data.description,
-        type: data.type!,
-        location: data.location || data.address || '',
-        city: data.city || '',
-        price: parseFloat(data.price?.toString() || '0'),
-        size: data.size,
-        rooms: data.rooms,
-        bathrooms: data.bathrooms,
-        bedrooms: data.bedrooms,
-        status: data.status || 'active'
-      })
+      .values(insertValues)
       .returning();
+
+    this.clearCacheByPattern('properties_');
+    this.clearCacheByPattern('property_');
 
     return this.mapProperty(property);
   }
 
   async updateProperty(id: string, data: Partial<Property>): Promise<Property> {
-    const updateData: any = { ...data };
-    // Features are stored as jsonb, no need to stringify
-    updateData.updatedAt = new Date();
-    
-    // Remove createdAt from update data as it shouldn't be updated
-    delete updateData.createdAt;
-    
+    const propertyId = Number(id);
+    if (Number.isNaN(propertyId)) {
+      throw new Error(`Ungültige Immobilien-ID: ${id}`);
+    }
+
+    const [existing] = await db.select()
+      .from(schema.properties)
+      .where(eq(schema.properties.id, propertyId));
+
+    if (!existing) {
+      throw new Error(`Immobilie mit ID ${id} wurde nicht gefunden.`);
+    }
+
+    const updateValues = this.composeUpdateProperty(existing, data);
+    updateValues.updatedAt = new Date();
+
     const [property] = await db.update(schema.properties)
-      .set(updateData)
-      .where(eq(schema.properties.id, id))
+      .set(updateValues)
+      .where(eq(schema.properties.id, propertyId))
       .returning();
+
+    this.clearCacheByPattern('properties_');
+    this.clearCacheByPattern('property_');
 
     return this.mapProperty(property);
   }
@@ -495,7 +565,7 @@ class Storage {
     try {
       const { limit = 100, offset = 0, category, propertyId, search } = options;
       
-      let whereConditions = [];
+      const whereConditions = [];
 
       if (category) {
         whereConditions.push(eq(schema.galleryImages.category, category));
@@ -618,7 +688,7 @@ class Storage {
 
     try {
       const result = await PerformanceMonitor.timeDbOperation('getInquiries', async () => {
-        let whereConditions = [];
+        const whereConditions = [];
 
         if (status) {
           whereConditions.push(eq(schema.inquiries.status, status));
@@ -802,7 +872,7 @@ class Storage {
     const { limit = 10, offset = 0, type, status, search, assignedAgent } = options;
 
     try {
-      let whereConditions = [];
+      const whereConditions = [];
 
       if (type) {
         whereConditions.push(eq(schema.customers.type, type));
@@ -935,7 +1005,7 @@ class Storage {
     const { limit = 10, offset = 0, agentId, status, date } = options;
 
     try {
-      let whereConditions = [];
+      const whereConditions = [];
 
       if (agentId) {
         whereConditions.push(eq(schema.appointments.agentId, agentId));
@@ -1189,7 +1259,7 @@ class Storage {
     const { limit = 10, offset = 0, stage, agentId } = options;
 
     try {
-      let whereConditions = [];
+      const whereConditions = [];
 
       if (stage) {
         whereConditions.push(eq(schema.leads.stage, stage));
@@ -1355,68 +1425,573 @@ class Storage {
   }
 
   // Private helper methods
-  private mapProperty(row: any): Property {
+  private composeInsertProperty(data: Partial<Property>): DbPropertyInsert {
+    const extras = this.mergePropertyExtras({}, data);
+    const metadata = this.serializePropertyExtras(extras);
+
+    const location = this.normalizeString(data.location) ?? "Unbekannte Adresse";
+    const city = this.normalizeString(data.city) ?? location;
+
     return {
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      type: row.type,
-      location: row.location,
-      price: Number(row.price) || 0,
-      size: row.area || row.size || 0, // Use area field from database or fallback to size
-      rooms: row.rooms || 0,
-      bathrooms: row.bathrooms || 0,
-      bedrooms: row.bedrooms || 0,
-      status: row.status,
-      features: this.parseFeatures(row.features),
-      images: row.images || ['/uploads/hero-bodensee-sunset.jpg'],
-      createdAt: row.createdAt?.toISOString() || new Date().toISOString(),
-      updatedAt: row.updatedAt?.toISOString() || new Date().toISOString()
+      title: this.normalizeString(data.title) ?? "Unbenannte Immobilie",
+      description: data.description ?? null,
+      type: this.normalizeString(data.type) ?? "sale",
+      status: this.normalizeString(data.status) ?? "active",
+      price: this.normalizeNumber(data.price) ?? 0,
+      currency: this.normalizeString(data.currency) ?? "EUR",
+      size: this.normalizeNumber(data.size),
+      rooms: this.normalizeNumber(data.rooms),
+      bathrooms: this.normalizeNumber(data.bathrooms),
+      bedrooms: this.normalizeNumber(data.bedrooms),
+      location,
+      city,
+      postalCode: this.normalizeString(data.postalCode),
+      region: this.normalizeString(data.region),
+      country: this.normalizeString(data.country) ?? "Germany",
+      latitude: this.normalizeNumber(data.latitude),
+      longitude: this.normalizeNumber(data.longitude),
+      yearBuilt: this.normalizeNumber(data.yearBuilt),
+      hasGarden: this.normalizeBoolean(data.hasGarden),
+      hasBalcony: this.normalizeBoolean(data.hasBalcony),
+      hasParking: this.normalizeBoolean(data.hasParking),
+      energyRating: this.normalizeString(data.energyRating),
+      slug: this.normalizeString(data.slug),
+      metaTitle: this.normalizeString(data.metaTitle),
+      metaDescription: this.normalizeString(data.metaDescription),
+      metadata,
+      publishedAt: this.toNullableDate(data.publishedAt)
     };
   }
 
-  private mapGalleryImage(row: any): GalleryImage {
-    return {
-      id: row.id,
-      filename: row.filename,
-      originalName: row.originalName,
-      url: row.url || `/api/gallery/${row.id}/image`,
-      alt: row.alt,
-      category: row.category,
-      propertyId: row.propertyId,
-      size: row.size,
-      uploadedAt: row.uploadedAt?.toISOString() || new Date().toISOString()
-    };
-  }
+  private composeUpdateProperty(existing: DbPropertyRow, updates: Partial<Property>): Partial<DbPropertyInsert> {
+    const base = this.propertyRowToInsert(existing);
+    const next: DbPropertyInsert = { ...base };
+    const updateRecord = updates as Record<string, unknown>;
 
-  private mapInquiry(row: any): Inquiry {
-    return {
-      id: row.id,
-      name: row.name,
-      email: row.email,
-      phone: row.phone,
-      subject: row.subject,
-      message: row.message,
-      propertyId: row.propertyId,
-      status: row.status,
-      createdAt: row.createdAt?.toISOString() || new Date().toISOString()
-    };
-  }
+    if (this.hasOwn(updateRecord, "title")) {
+      const title = this.normalizeString(updates.title);
+      next.title = title ?? base.title ?? "Unbenannte Immobilie";
+    }
 
-  private parseFeatures(features: any): string[] {
-    if (Array.isArray(features)) return features;
-    if (typeof features === 'string') {
-      try {
-        return JSON.parse(features);
-      } catch {
-        return features.split(',').map(f => f.trim());
+    if (this.hasOwn(updateRecord, "description")) {
+      next.description = updates.description ?? null;
+    }
+
+    if (this.hasOwn(updateRecord, "type")) {
+      const type = this.normalizeString(updates.type);
+      next.type = type ?? base.type ?? "sale";
+    }
+
+    if (this.hasOwn(updateRecord, "status")) {
+      const status = this.normalizeString(updates.status);
+      next.status = status ?? base.status ?? "active";
+    }
+
+    if (this.hasOwn(updateRecord, "price")) {
+      const price = this.normalizeNumber(updates.price);
+      next.price = price ?? base.price ?? 0;
+    }
+
+    if (this.hasOwn(updateRecord, "currency")) {
+      const currency = this.normalizeString(updates.currency);
+      next.currency = currency ?? base.currency ?? "EUR";
+    }
+
+    if (this.hasOwn(updateRecord, "size")) {
+      next.size = this.normalizeNumber(updates.size);
+    }
+    if (this.hasOwn(updateRecord, "rooms")) {
+      next.rooms = this.normalizeNumber(updates.rooms);
+    }
+    if (this.hasOwn(updateRecord, "bathrooms")) {
+      next.bathrooms = this.normalizeNumber(updates.bathrooms);
+    }
+    if (this.hasOwn(updateRecord, "bedrooms")) {
+      next.bedrooms = this.normalizeNumber(updates.bedrooms);
+    }
+
+    if (this.hasOwn(updateRecord, "location")) {
+      const location = this.normalizeString(updates.location) ?? base.location ?? "Unbekannte Adresse";
+      next.location = location;
+      if (!this.hasOwn(updateRecord, "city") && !next.city) {
+        next.city = location;
       }
     }
+
+    if (this.hasOwn(updateRecord, "city")) {
+      const city = this.normalizeString(updates.city);
+      next.city = city ?? next.location ?? base.city ?? "Unbekannt";
+    }
+
+    if (this.hasOwn(updateRecord, "postalCode")) {
+      next.postalCode = this.normalizeString(updates.postalCode);
+    }
+    if (this.hasOwn(updateRecord, "region")) {
+      next.region = this.normalizeString(updates.region);
+    }
+    if (this.hasOwn(updateRecord, "country")) {
+      next.country = this.normalizeString(updates.country) ?? base.country ?? "Germany";
+    }
+
+    if (this.hasOwn(updateRecord, "latitude")) {
+      next.latitude = this.normalizeNumber(updates.latitude);
+    }
+    if (this.hasOwn(updateRecord, "longitude")) {
+      next.longitude = this.normalizeNumber(updates.longitude);
+    }
+    if (this.hasOwn(updateRecord, "yearBuilt")) {
+      next.yearBuilt = this.normalizeNumber(updates.yearBuilt);
+    }
+
+    if (this.hasOwn(updateRecord, "hasGarden")) {
+      next.hasGarden = this.normalizeBoolean(updates.hasGarden);
+    }
+    if (this.hasOwn(updateRecord, "hasBalcony")) {
+      next.hasBalcony = this.normalizeBoolean(updates.hasBalcony);
+    }
+    if (this.hasOwn(updateRecord, "hasParking")) {
+      next.hasParking = this.normalizeBoolean(updates.hasParking);
+    }
+
+    if (this.hasOwn(updateRecord, "energyRating")) {
+      next.energyRating = this.normalizeString(updates.energyRating);
+    }
+    if (this.hasOwn(updateRecord, "slug")) {
+      next.slug = this.normalizeString(updates.slug);
+    }
+    if (this.hasOwn(updateRecord, "metaTitle")) {
+      next.metaTitle = this.normalizeString(updates.metaTitle);
+    }
+    if (this.hasOwn(updateRecord, "metaDescription")) {
+      next.metaDescription = this.normalizeString(updates.metaDescription);
+    }
+
+    if (this.hasOwn(updateRecord, "publishedAt")) {
+      next.publishedAt = this.toNullableDate(updates.publishedAt);
+    }
+
+    const mergedExtras = this.mergePropertyExtras(this.extractPropertyExtras(existing), updates);
+    next.metadata = this.serializePropertyExtras(mergedExtras);
+
+    return next;
+  }
+
+  private propertyRowToInsert(row: DbPropertyRow): DbPropertyInsert {
+    return {
+      title: row.title,
+      description: row.description ?? null,
+      type: row.type,
+      status: row.status,
+      price: Number(row.price ?? 0),
+      currency: row.currency ?? "EUR",
+      size: row.size ?? null,
+      rooms: row.rooms ?? null,
+      bathrooms: row.bathrooms ?? null,
+      bedrooms: row.bedrooms ?? null,
+      location: row.location,
+      city: row.city,
+      postalCode: row.postalCode ?? null,
+      region: row.region ?? null,
+      country: row.country ?? "Germany",
+      latitude: row.latitude ?? null,
+      longitude: row.longitude ?? null,
+      yearBuilt: row.yearBuilt ?? null,
+      hasGarden: row.hasGarden ?? null,
+      hasBalcony: row.hasBalcony ?? null,
+      hasParking: row.hasParking ?? null,
+      energyRating: row.energyRating ?? null,
+      slug: row.slug ?? null,
+      metaTitle: row.metaTitle ?? null,
+      metaDescription: row.metaDescription ?? null,
+      metadata: row.metadata ?? null,
+      publishedAt: row.publishedAt ?? null
+    };
+  }
+
+  private extractPropertyExtras(row: DbPropertyRow): PropertyExtras {
+    if (!row.metadata) {
+      return {};
+    }
+
+    try {
+      const raw = JSON.parse(row.metadata) as Record<string, unknown>;
+      return this.mergePropertyExtras({}, raw);
+    } catch (error) {
+      console.warn('⚠️ Failed to parse property metadata:', error);
+      return {};
+    }
+  }
+
+  private mergePropertyExtras(base: PropertyExtras, updates: Partial<Property> | Record<string, unknown>): PropertyExtras {
+    const result: PropertyExtras = { ...base };
+    const source = updates as Record<string, unknown>;
+
+    const arrayKeys: Array<keyof PropertyExtras> = ["features", "images", "nearbyAmenities"];
+    for (const key of arrayKeys) {
+      if (this.hasOwn(source, key as string)) {
+        const normalized = this.normalizeStringArray(source[key as string]);
+        if (normalized.length > 0) {
+          result[key] = normalized;
+        } else {
+          delete result[key];
+        }
+      }
+    }
+
+    const numberKeys: Array<keyof PropertyExtras> = ["plotSize", "garageSpaces"];
+    for (const key of numberKeys) {
+      if (this.hasOwn(source, key as string)) {
+        const normalized = this.normalizeNumber(source[key as string]);
+        if (normalized !== null) {
+          result[key] = normalized;
+        } else {
+          delete result[key];
+        }
+      }
+    }
+
+    const stringKeys: Array<keyof PropertyExtras> = [
+      "energyClass",
+      "agentNotes",
+      "condition",
+      "heatingType",
+      "basement",
+      "balconyTerrace",
+      "renovation",
+      "lakeDistance",
+      "publicTransport",
+      "internetSpeed",
+      "noiseLevel",
+      "viewQuality",
+      "flooring",
+      "kitchen",
+      "bathroom",
+      "security",
+      "smartHome",
+      "elevator",
+      "wellness",
+      "fireplace",
+      "airConditioning",
+      "solarSystem",
+      "electricCar",
+      "storageSpace",
+      "seoMeta"
+    ];
+
+    for (const key of stringKeys) {
+      if (this.hasOwn(source, key as string)) {
+        const normalized = this.normalizeString(source[key as string]);
+        if (normalized) {
+          result[key] = normalized;
+        } else {
+          delete result[key];
+        }
+      }
+    }
+
+    if (this.hasOwn(source, "marketAnalysis")) {
+      const normalized = this.normalizeMarketAnalysis(source.marketAnalysis);
+      if (normalized) {
+        result.marketAnalysis = normalized;
+      } else {
+        delete result.marketAnalysis;
+      }
+    }
+
+    return result;
+  }
+
+  private serializePropertyExtras(extras: PropertyExtras): string | null {
+    const sanitized = Object.entries(extras).reduce<Record<string, unknown>>((acc, [key, value]) => {
+      if (value === undefined) {
+        return acc;
+      }
+
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          acc[key] = value;
+        }
+        return acc;
+      }
+
+      if (value && typeof value === 'object') {
+        if (Object.keys(value as Record<string, unknown>).length > 0) {
+          acc[key] = value;
+        }
+        return acc;
+      }
+
+      if (value !== null) {
+        acc[key] = value;
+      } else {
+        acc[key] = null;
+      }
+
+      return acc;
+    }, {});
+
+    return Object.keys(sanitized).length > 0 ? JSON.stringify(sanitized) : null;
+  }
+
+  private normalizeStringArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value
+        .map(entry => this.normalizeString(entry))
+        .filter((entry): entry is string => Boolean(entry));
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return [];
+      }
+
+      return trimmed
+        .split(',')
+        .map(entry => this.normalizeString(entry))
+        .filter((entry): entry is string => Boolean(entry));
+    }
+
     return [];
   }
 
+  private normalizeString(value: unknown): string | null {
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+
+    return null;
+  }
+
+  private normalizeNumber(value: unknown): number | null {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.replace(/,/g, '.').trim();
+      if (!normalized) {
+        return null;
+      }
+
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    return null;
+  }
+
+  private normalizeBoolean(value: unknown): boolean | null {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    if (typeof value === 'number') {
+      return value !== 0;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (['true', '1', 'yes', 'on'].includes(normalized)) {
+        return true;
+      }
+      if (['false', '0', 'no', 'off'].includes(normalized)) {
+        return false;
+      }
+    }
+
+    return null;
+  }
+
+  private normalizeMarketAnalysis(value: unknown): PropertyMarketAnalysis | null {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+
+    let source: Record<string, unknown> | null = null;
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return null;
+      }
+
+      try {
+        source = JSON.parse(trimmed) as Record<string, unknown>;
+      } catch {
+        return { marketTrend: trimmed };
+      }
+    } else if (typeof value === 'object') {
+      source = value as Record<string, unknown>;
+    }
+
+    if (!source) {
+      return null;
+    }
+
+    const result: PropertyMarketAnalysis = {};
+
+    const pricePerSqm = this.normalizeNumber(source.pricePerSqm);
+    if (pricePerSqm !== null) {
+      result.pricePerSqm = pricePerSqm;
+    }
+
+    const marketTrend = this.normalizeString(source.marketTrend);
+    if (marketTrend) {
+      result.marketTrend = marketTrend;
+    }
+
+    const comparableProperties = this.normalizeString(source.comparableProperties);
+    if (comparableProperties) {
+      result.comparableProperties = comparableProperties;
+    }
+
+    const investmentPotential = this.normalizeString(source.investmentPotential);
+    if (investmentPotential) {
+      result.investmentPotential = investmentPotential;
+    }
+
+    return Object.keys(result).length > 0 ? result : null;
+  }
+
+  private toNullableDate(value: unknown): Date | null {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    const parsed = typeof value === 'number' ? new Date(value) : new Date(String(value));
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private toIsoString(value: unknown): string {
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? new Date().toISOString() : value.toISOString();
+    }
+
+    if (typeof value === 'number') {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+    }
+
+    if (typeof value === 'string') {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? value : date.toISOString();
+    }
+
+    return new Date().toISOString();
+  }
+
+  private hasOwn(source: Record<string, unknown>, key: string): boolean {
+    return Object.prototype.hasOwnProperty.call(source, key);
+  }
+
+  private mapProperty(row: DbPropertyRow): Property {
+    const extras = this.extractPropertyExtras(row);
+    const location = row.location ?? "";
+    const city = row.city ?? location;
+
+    return {
+      id: String(row.id),
+      title: row.title,
+      description: row.description ?? null,
+      type: row.type,
+      status: row.status,
+      price: Number(row.price ?? 0),
+      currency: row.currency ?? "EUR",
+      size: row.size ?? null,
+      rooms: row.rooms ?? null,
+      bathrooms: row.bathrooms ?? null,
+      bedrooms: row.bedrooms ?? null,
+      location,
+      city,
+      postalCode: row.postalCode ?? null,
+      region: row.region ?? null,
+      country: row.country ?? "Germany",
+      latitude: row.latitude ?? null,
+      longitude: row.longitude ?? null,
+      yearBuilt: row.yearBuilt ?? null,
+      hasGarden: row.hasGarden ?? null,
+      hasBalcony: row.hasBalcony ?? null,
+      hasParking: row.hasParking ?? null,
+      energyRating: row.energyRating ?? null,
+      slug: row.slug ?? null,
+      metaTitle: row.metaTitle ?? null,
+      metaDescription: row.metaDescription ?? null,
+      publishedAt: row.publishedAt ? this.toIsoString(row.publishedAt) : null,
+      features: Array.isArray(extras.features) ? extras.features : [],
+      images: extras.images && Array.isArray(extras.images) && extras.images.length > 0
+        ? extras.images
+        : ['/uploads/hero-bodensee-sunset.jpg'],
+      energyClass: extras.energyClass ?? null,
+      agentNotes: extras.agentNotes ?? null,
+      condition: extras.condition ?? null,
+      nearbyAmenities: Array.isArray(extras.nearbyAmenities) ? extras.nearbyAmenities : [],
+      heatingType: extras.heatingType ?? null,
+      plotSize: typeof extras.plotSize === 'number' ? extras.plotSize : null,
+      garageSpaces: typeof extras.garageSpaces === 'number' ? extras.garageSpaces : null,
+      basement: extras.basement ?? null,
+      balconyTerrace: extras.balconyTerrace ?? null,
+      renovation: extras.renovation ?? null,
+      lakeDistance: extras.lakeDistance ?? null,
+      publicTransport: extras.publicTransport ?? null,
+      internetSpeed: extras.internetSpeed ?? null,
+      noiseLevel: extras.noiseLevel ?? null,
+      viewQuality: extras.viewQuality ?? null,
+      flooring: extras.flooring ?? null,
+      kitchen: extras.kitchen ?? null,
+      bathroom: extras.bathroom ?? null,
+      security: extras.security ?? null,
+      smartHome: extras.smartHome ?? null,
+      elevator: extras.elevator ?? null,
+      wellness: extras.wellness ?? null,
+      fireplace: extras.fireplace ?? null,
+      airConditioning: extras.airConditioning ?? null,
+      solarSystem: extras.solarSystem ?? null,
+      electricCar: extras.electricCar ?? null,
+      storageSpace: extras.storageSpace ?? null,
+      marketAnalysis: extras.marketAnalysis ?? null,
+      createdAt: this.toIsoString(row.createdAt),
+      updatedAt: this.toIsoString(row.updatedAt)
+    };
+  }
+
+  private mapGalleryImage(row: DbGalleryImage): GalleryImage {
+    return {
+      ...row,
+      url: (row as Record<string, unknown>).url ?? `/api/gallery/${row.id}/image`,
+      uploadedAt: this.toIsoString((row as Record<string, unknown>).uploadedAt ?? row.createdAt ?? new Date())
+    } as GalleryImage;
+  }
+
+  private mapInquiry(row: DbInquiry): Inquiry {
+    return {
+      ...row,
+      createdAt: this.toIsoString(row.createdAt)
+    } as Inquiry;
+  }
+
   private getFallbackProperties(): Property[] {
-    // Echte Upload-Dateien scannen
     const uploadsDir = path.join(process.cwd(), 'uploads');
     let availableImages: string[] = [];
 
@@ -1431,13 +2006,12 @@ class Storage {
       console.log('📁 Upload scan error:', (error as Error).message);
     }
 
-    // Wenn keine Bilder vorhanden, leeres Array zurückgeben
     if (availableImages.length === 0) {
       console.log('📁 Keine Upload-Dateien gefunden - Properties werden aus DB geladen');
       return [];
     }
 
-    console.log(`📁 ${availableImages.length} Upload-Bilder gefunden:`, availableImages);
+    const timestamp = new Date().toISOString();
 
     return [
       {
@@ -1445,51 +2019,183 @@ class Storage {
         title: "Luxusvilla Bodensee Premium",
         description: "Exklusive Villa mit direktem Bodensee-Zugang und Panoramablick",
         type: "villa",
-        location: "konstanz", // Using slug for consistent filtering
-        price: 1250000,
+        status: "available",
+        price: 1_250_000,
+        currency: "EUR",
         size: 180,
         rooms: 5,
         bathrooms: 3,
         bedrooms: 4,
-        status: "available",
+        location: "Konstanz",
+        city: "Konstanz",
+        postalCode: null,
+        region: null,
+        country: "Germany",
+        latitude: null,
+        longitude: null,
+        yearBuilt: null,
+        hasGarden: true,
+        hasBalcony: true,
+        hasParking: true,
+        energyRating: null,
+        slug: null,
+        metaTitle: null,
+        metaDescription: null,
+        publishedAt: null,
         features: ["Seeblick", "Pool", "Garten", "Garage"],
-        images: availableImages.slice(0, 3), // Erste 3 Bilder verwenden
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        images: availableImages.slice(0, 3),
+        energyClass: null,
+        agentNotes: null,
+        condition: "renovated",
+        nearbyAmenities: ["See", "Innenstadt"],
+        heatingType: null,
+        plotSize: null,
+        garageSpaces: 2,
+        basement: "ja",
+        balconyTerrace: "großzügige Terrasse",
+        renovation: null,
+        lakeDistance: "Direkter Zugang",
+        publicTransport: "5 Minuten",
+        internetSpeed: null,
+        noiseLevel: "ruhig",
+        viewQuality: "Panorama",
+        flooring: null,
+        kitchen: null,
+        bathroom: null,
+        security: null,
+        smartHome: null,
+        elevator: null,
+        wellness: null,
+        fireplace: null,
+        airConditioning: null,
+        solarSystem: null,
+        electricCar: null,
+        storageSpace: null,
+        marketAnalysis: null,
+        createdAt: timestamp,
+        updatedAt: timestamp
       },
       {
         id: "2",
         title: "Penthouse Überlingen",
         description: "Exklusives Penthouse mit Dachterrasse und Seeblick",
         type: "apartment",
-        location: "ueberlingen", // Using slug for consistent filtering
-        price: 685000,
+        status: "available",
+        price: 685_000,
+        currency: "EUR",
         size: 120,
         rooms: 4,
         bathrooms: 2,
         bedrooms: 3,
-        status: "available",
+        location: "Überlingen",
+        city: "Überlingen",
+        postalCode: null,
+        region: null,
+        country: "Germany",
+        latitude: null,
+        longitude: null,
+        yearBuilt: null,
+        hasGarden: false,
+        hasBalcony: true,
+        hasParking: true,
+        energyRating: null,
+        slug: null,
+        metaTitle: null,
+        metaDescription: null,
+        publishedAt: null,
         features: ["Dachterrasse", "Aufzug", "Tiefgarage"],
-        images: availableImages.slice(1, 4), // Nächste 3 Bilder
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        images: availableImages.slice(1, 4),
+        energyClass: null,
+        agentNotes: null,
+        condition: "excellent",
+        nearbyAmenities: ["Innenstadt"],
+        heatingType: null,
+        plotSize: null,
+        garageSpaces: 1,
+        basement: null,
+        balconyTerrace: "Dachterrasse",
+        renovation: null,
+        lakeDistance: "200 m",
+        publicTransport: "2 Minuten",
+        internetSpeed: null,
+        noiseLevel: "mittel",
+        viewQuality: "Seeblick",
+        flooring: null,
+        kitchen: null,
+        bathroom: null,
+        security: null,
+        smartHome: null,
+        elevator: "ja",
+        wellness: null,
+        fireplace: null,
+        airConditioning: null,
+        solarSystem: null,
+        electricCar: null,
+        storageSpace: null,
+        marketAnalysis: null,
+        createdAt: timestamp,
+        updatedAt: timestamp
       },
       {
         id: "3",
         title: "Einfamilienhaus Friedrichshafen",
         description: "Modernes Einfamilienhaus in bester Wohnlage",
         type: "house",
-        location: "friedrichshafen", // Using slug for consistent filtering
-        price: 850000,
+        status: "available",
+        price: 850_000,
+        currency: "EUR",
         size: 160,
         rooms: 6,
         bathrooms: 3,
         bedrooms: 5,
-        status: "available",
+        location: "Friedrichshafen",
+        city: "Friedrichshafen",
+        postalCode: null,
+        region: null,
+        country: "Germany",
+        latitude: null,
+        longitude: null,
+        yearBuilt: null,
+        hasGarden: true,
+        hasBalcony: true,
+        hasParking: true,
+        energyRating: null,
+        slug: null,
+        metaTitle: null,
+        metaDescription: null,
+        publishedAt: null,
         features: ["Garten", "Keller", "Doppelgarage"],
-        images: availableImages.slice(2, 5), // Weitere Bilder
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        images: availableImages.slice(2, 5),
+        energyClass: null,
+        agentNotes: null,
+        condition: "good",
+        nearbyAmenities: ["Schule", "Supermarkt"],
+        heatingType: null,
+        plotSize: null,
+        garageSpaces: 2,
+        basement: "ja",
+        balconyTerrace: "Terrasse",
+        renovation: null,
+        lakeDistance: "800 m",
+        publicTransport: "10 Minuten",
+        internetSpeed: null,
+        noiseLevel: "ruhig",
+        viewQuality: "Gartenblick",
+        flooring: null,
+        kitchen: null,
+        bathroom: null,
+        security: null,
+        smartHome: null,
+        elevator: null,
+        wellness: null,
+        fireplace: null,
+        airConditioning: null,
+        solarSystem: null,
+        electricCar: null,
+        storageSpace: null,
+        marketAnalysis: null,
+        createdAt: timestamp,
+        updatedAt: timestamp
       }
     ];
   }

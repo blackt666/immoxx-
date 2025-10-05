@@ -818,7 +818,7 @@ router.post('/excel', importUpload.single('file'), async (req, res) => {
     console.log(`🔍 Auto-detected data type: ${dataType}`);
 
     let imported = 0;
-    let errors = [];
+    const errors = [];
 
     // Process each row
     for (let i = 0; i < rows.length; i++) {
@@ -931,7 +931,7 @@ router.post('/google-sheets', async (req, res) => {
     console.log(`🔍 Auto-detected data type: ${dataType}`);
 
     let imported = 0;
-    let errors = [];
+    const errors = [];
 
     // Process each row
     for (let i = 0; i < data.length; i++) {

@@ -194,7 +194,7 @@ export default function DashboardOverview({
             <div className="space-y-4">
               {recentInquiries?.inquiries
                 ?.slice(0, 3)
-                .map((inquiry: Inquiry, index: number) => (
+                .map((inquiry: Inquiry) => (
                   <div
                     key={inquiry.id}
                     className="flex items-start space-x-4 p-4 hover:bg-gray-50 rounded-lg transition-colors"
@@ -250,9 +250,9 @@ export default function DashboardOverview({
             </h2>
 
             <div className="grid grid-cols-2 gap-4">
-              {quickActions.map((action, index) => (
+              {quickActions.map((action) => (
                 <button
-                  key={index}
+                  key={action.title}
                   onClick={() => onTabChange(action.tab)}
                   className={`p-4 ${action.bgColor} hover:bg-opacity-20 rounded-lg border ${action.borderColor} transition-all group`}
                 >

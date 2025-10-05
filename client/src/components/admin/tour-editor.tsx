@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -167,7 +167,7 @@ export default function TourEditor({ propertyId }: TourEditorProps) {
                 🎯 Hotspot-Editor Anleitung
               </h4>
               <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Klicken Sie auf "+" um Hotspot-Modus zu aktivieren</li>
+                <li>• Klicken Sie auf &quot;+&quot; um Hotspot-Modus zu aktivieren</li>
                 <li>
                   • Klicken Sie in das 360°-Bild, um Hotspots zu platzieren
                 </li>

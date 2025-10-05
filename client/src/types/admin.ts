@@ -339,3 +339,67 @@ export interface BackupData {
     images: GalleryImage[];
   };
 }
+
+// Design Settings Types
+import { z } from "zod";
+
+const TypographySchema = z.object({
+  fontSize: z.number(),
+  lineHeight: z.number(),
+  letterSpacing: z.number(),
+  fontWeightNormal: z.number(),
+  fontWeightBold: z.number(),
+  scale: z.record(z.number()),
+});
+
+const ThemeColorsSchema = z.object({
+  background: z.string(),
+  foreground: z.string(),
+  card: z.string(),
+  cardForeground: z.string(),
+  popover: z.string(),
+  popoverForeground: z.string(),
+  primary: z.string(),
+  primaryForeground: z.string(),
+  secondary: z.string(),
+  secondaryForeground: z.string(),
+  muted: z.string(),
+  mutedForeground: z.string(),
+  accent: z.string(),
+  accentForeground: z.string(),
+  destructive: z.string(),
+  destructiveForeground: z.string(),
+  border: z.string(),
+  input: z.string(),
+  ring: z.string(),
+});
+
+const ThemeSchema = z.object({
+  colors: ThemeColorsSchema,
+  typography: TypographySchema.optional(),
+});
+
+export const DesignSettingsSchema = z.object({
+  id: z.number(),
+  fontFamily: z.string().nullable(),
+  theme: z.string(),
+  primaryColor: z.string().nullable(),
+  accentColor: z.string().nullable(),
+  logoUrl: z.string().nullable(),
+  faviconUrl: z.string().nullable(),
+  customCss: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  light: ThemeSchema,
+  dark: ThemeSchema,
+});
+
+export type DesignSettings = z.infer<typeof DesignSettingsSchema>;
+
+export interface VirtualTour {
+  id: string;
+  propertyId: string;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+}

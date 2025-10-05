@@ -1,5 +1,5 @@
 import { db } from "../../db";
-import { eq, and, gte, lte, desc, asc, sql, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, sql, inArray, isNull } from "drizzle-orm";
 import { crmLeads, crmActivities, crmTasks } from "../../database/schema/crm";
 
 export interface LeadFilters {
@@ -78,7 +78,9 @@ export class LeadService {
       conditions.push(eq(crmLeads.temperature, temperature));
     }
 
-    if (assigned_to) {
+    if (assigned_to === null) {
+      conditions.push(isNull(crmLeads.assigned_to));
+    } else if (typeof assigned_to !== "undefined") {
       conditions.push(eq(crmLeads.assigned_to, assigned_to));
     }
 

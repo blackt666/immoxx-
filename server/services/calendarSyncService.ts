@@ -3,20 +3,17 @@ import {
   calendarConnections, 
   appointments, 
   calendarEvents, 
-  calendarSyncLogs,
-  customers 
+  calendarSyncLogs
 } from '@shared/schema';
-import { eq, and, isNull, ne, inArray, or, gte, lte } from 'drizzle-orm';
+import { eq, and, isNull, ne, or, gte, lte } from 'drizzle-orm';
 import type { 
   CalendarConnection, 
-  Appointment, 
-  CalendarEvent,
+  Appointment,
   InsertCalendarSyncLog 
 } from '@shared/schema';
 import { googleCalendarService } from './googleCalendarService.js';
 import { appleCalendarService } from './appleCalendarService.js';
-import { formatInTimeZone } from 'date-fns-tz';
-import { addHours, subHours, isAfter, isBefore } from 'date-fns';
+import { addHours, subHours } from 'date-fns';
 
 // Utility function for safe error message extraction
 function getErrorMessage(error: unknown): string {
@@ -288,7 +285,7 @@ export class CalendarSyncService {
     try {
       // Get appointments that need sync
       const appointmentsToSync = await this.getAppointmentsForSync(
-        connection.agentId,
+        connection.agentId || '',
         timeRange,
         connection.provider,
         options.forceSync
@@ -368,8 +365,8 @@ export class CalendarSyncService {
             .from(calendarEvents)
             .where(
               and(
-                eq(calendarEvents.connectionId, connection.id),
-                eq(calendarEvents.externalEventId, calendarEvent.id || calendarEvent.uid)
+                eq(calendarEvents.calendarConnectionId, connection.id),
+                eq(calendarEvents.externalId, calendarEvent.id || calendarEvent.uid)
               )
             );
 
@@ -415,15 +412,16 @@ export class CalendarSyncService {
    * Get appointments that need syncing to calendar
    */
   private async getAppointmentsForSync(
-    agentId: string,
+    agentId: number | string,
     timeRange: { start: Date; end: Date },
     provider: string,
     forceSync = false
   ): Promise<Appointment[]> {
+    const agentIdNum = typeof agentId === 'string' ? parseInt(agentId) : agentId;
     const conditions = [
-      eq(appointments.agentId, agentId),
-      gte(appointments.scheduledDate, timeRange.start),
-      lte(appointments.scheduledDate, timeRange.end),
+      eq(appointments.agentId, agentIdNum),
+      gte(appointments.startTime, timeRange.start),
+      lte(appointments.startTime, timeRange.end),
     ];
 
     if (!forceSync) {
@@ -451,7 +449,7 @@ export class CalendarSyncService {
       .select()
       .from(appointments)
       .where(and(...conditions))
-      .orderBy(appointments.scheduledDate);
+      .orderBy(appointments.startTime);
   }
 
   /**
@@ -461,7 +459,6 @@ export class CalendarSyncService {
     appointment: Appointment,
     provider: string
   ): Promise<'create' | 'update' | 'delete' | 'skip'> {
-    const eventIdField = provider === 'google' ? 'googleCalendarEventId' : 'appleCalendarEventId';
     const eventId = provider === 'google' ? appointment.googleCalendarEventId : appointment.appleCalendarEventId;
 
     // If appointment is cancelled or completed and we have an event ID, delete the event
@@ -631,7 +628,7 @@ export class CalendarSyncService {
    * Update connection sync status
    */
   private async updateConnectionSyncStatus(
-    connectionId: string,
+    connectionId: number,
     status: string,
     error?: string | null
   ): Promise<void> {
@@ -739,8 +736,8 @@ export class CalendarSyncService {
    * Log sync operation
    */
   private async logSyncOperation(
-    connectionId: string | null,
-    appointmentId: string | null,
+    connectionId: number | null,
+    appointmentId: number | null,
     operation: 'create' | 'update' | 'delete' | 'sync',
     direction: 'crm_to_calendar' | 'calendar_to_crm',
     status: 'success' | 'error' | 'skipped',
