@@ -76,8 +76,8 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     next();
     return;
   }
-  
-  if (req.session?.user) { // Changed from req.session.userId to req.session.user for the new auth logic
+
+  if (req.session?.user && req.session?.isAuthenticated) {
     next();
   } else {
     res.status(401).json({ message: "Unauthorized" });
@@ -186,14 +186,14 @@ const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
     return;
   }
   
-  if (req.session?.user) {
+  if (req.session?.user && req.session?.isAuthenticated) {
     // SECURITY FIX: Only check role === 'admin' for proper role-based access control
     // Removed username fallback to prevent privilege escalation
     if (req.session.user.role === 'admin') {
       next();
     } else {
       console.log('❌ Admin access denied for user:', req.session.user.username, 'Role:', req.session.user.role);
-      res.status(403).json({ 
+      res.status(403).json({
         message: "Admin privileges required",
         error: "Forbidden - Admin role required for this operation"
       });
