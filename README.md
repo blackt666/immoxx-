@@ -101,7 +101,12 @@ npm run dev
 npm run dev
 ```
 
-Die Website ist dann unter `http://localhost:5000` erreichbar.
+Die Website ist dann unter `http://localhost:5000` erreichbar (Vite Dev Server proxied zur Backend API auf Port 5001).
+
+**Port-Konfiguration:**
+- Frontend (Vite): `http://localhost:5000`
+- Backend (Express): `http://localhost:5001`
+- Vite proxied automatisch `/api/*` Anfragen zum Backend
 
 ### 6. Admin-Zugang
 

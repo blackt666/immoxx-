@@ -32,7 +32,14 @@ NOTION_API_KEY=your-notion-key (optional)
 ```bash
 # Development
 npm run dev
+```
 
+**Development Server Ports:**
+- Frontend (Vite): http://localhost:5000
+- Backend (Express): http://localhost:5001
+- Vite proxied automatisch `/api` requests zum Backend
+
+```bash
 # Production mit PM2
 npm run pm2:start
 ```
@@ -84,6 +91,23 @@ Logs werden gespeichert in `./logs/`:
 - `rejections.log` - Unbehandelte Promise Rejections
 
 ## Troubleshooting
+
+### Port Conflicts / "Address already in use"
+```bash
+# Check which process is using a port
+lsof -ti:5000  # Check Vite port
+lsof -ti:5001  # Check Backend port
+
+# Kill process on specific port
+lsof -ti:5001 | xargs kill -9
+```
+
+**Port Configuration:**
+- Development mode uses TWO separate ports:
+  - Port 5000: Vite dev server (Frontend)
+  - Port 5001: Express backend (API)
+- Vite automatically proxies `/api/*` requests to backend
+- In production, only one port is needed (backend serves static files)
 
 ### Server startet nicht
 ```bash
