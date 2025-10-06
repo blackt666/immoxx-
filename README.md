@@ -20,6 +20,15 @@ Eine moderne, vollständig responsive Immobilienmakler-Website mit AI-Integratio
 - **Bildergalerie-Management** mit Upload-Funktionalität
 - **System-Diagnose** und Monitoring
 
+### 📊 CRM System (Neu!)
+
+- **Drag & Drop Pipeline** - Visuelles Lead-Management mit 8 Stufen
+- **Activity Timeline** - Vollständige Aktivitätshistorie pro Lead
+- **Email Integration** - SendGrid SMTP für automatische Benachrichtigungen
+- **Real-time Notifications** - Benachrichtigungsglocke mit Live-Updates
+- **Advanced Analytics** - Dashboard mit KPIs, Charts und Trends
+- **CSV Import/Export** - Bulk-Lead-Import mit Validierung
+
 ### 🤖 AI & Integrationen
 
 - **DeepSeek AI** für intelligente Immobilienbewertungen & Marktanalysen
@@ -27,9 +36,12 @@ Eine moderne, vollständig responsive Immobilienmakler-Website mit AI-Integratio
   - Automatische Marktanalysen
   - Content-Generierung (Beschreibungen, E-Mails)
   - AI-Chat Assistent
+- **SendGrid** für E-Mail-Benachrichtigungen und Kommunikation
 - **Notion API** für CRM-Integration
 - **Pannellum.js** für 360° Tours
 - **OpenAI GPT-4** (Legacy Support)
+- **Recharts** für Analytics-Visualisierung
+- **DnD Kit** für Drag-and-Drop Funktionalität
 
 ## 🏗️ Tech Stack
 
@@ -80,6 +92,11 @@ OPENAI_API_KEY=sk-...  # OpenAI GPT-4 (optional)
 # CRM Integration
 NOTION_API_KEY=secret_...  # Für CRM Integration
 NOTION_DATABASE_ID=...  # Notion Datenbank ID
+
+# E-Mail Benachrichtigungen (CRM)
+SENDGRID_API_KEY=SG....  # SendGrid für E-Mails
+SMTP_FROM="Bodensee Immobilien <noreply@bimm-fn.de>"
+ADMIN_EMAIL=admin@bimm-fn.de  # Empfänger für Lead-Benachrichtigungen
 
 # Session Security
 SESSION_SECRET=...  # Generiere mit: openssl rand -base64 32
