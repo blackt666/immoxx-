@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  if (req.session && req.session.user) {
+  if (req.session && req.session.user && req.session.isAuthenticated) {
     req.agentId = req.session.user.id;
     return next();
   }

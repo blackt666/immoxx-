@@ -28,4 +28,13 @@ declare module 'express-session' {
   }
 }
 
+// Extend Express Request interface to include agentId
+declare global {
+  namespace Express {
+    interface Request {
+      agentId?: string;
+    }
+  }
+}
+
 export {}; // Make this a module

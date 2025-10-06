@@ -10,15 +10,6 @@ const router = Router();
 const googleCalendarService = new GoogleCalendarService();
 const tokenMaintenanceService = new TokenMaintenanceService();
 
-// Extends the Express Request interface to include a custom 'agentId' property.
-declare global {
-    namespace Express {
-        interface Request {
-            agentId?: string;
-        }
-    }
-}
-
 // Route to get the Google authentication URL
 router.get('/auth/url', authMiddleware, (req: Request, res: Response) => {
     const agentId = req.agentId;
