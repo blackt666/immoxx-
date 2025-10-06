@@ -11,6 +11,7 @@
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "test": "node test-quick-validation.js",
+    "test:build": "node test-build-validation.js",
     "test:e2e": "npx playwright test",
     "test:all": "./run-tests.sh",
     "pm2:start": "./pm2-server.sh start",
