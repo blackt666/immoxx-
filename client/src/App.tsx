@@ -20,6 +20,8 @@ import AGB from './pages/agb';
 import Widerrufsrecht from './pages/widerrufsrecht';
 import CookieEinstellungen from './pages/cookie-einstellungen';
 import NotFound from './pages/not-found';
+import AdminUserLogin from './pages/adminuser-login';
+import AdminUserDashboard from './pages/adminuser-dashboard';
 
 // Ultra-simple query client - no retries, no background fetching
 const queryClient = new QueryClient({
@@ -78,7 +80,11 @@ export default function App() {
                 <Route path="/properties/:id" component={PropertyDetails} />
                 <Route path="/ai-valuation" component={AIValuation} />
 
-                {/* Admin Routes */}
+                {/* New Admin User Routes */}
+                <Route path="/adminuser" component={AdminUserLogin} />
+                <Route path="/adminuser/dashboard" component={AdminUserDashboard} />
+
+                {/* Old Admin Routes (kept for compatibility) */}
                 <Route path="/admin/login" component={AdminLogin} />
                 <Route path="/admin/crm/dashboard" component={CRMDashboard} />
                 <Route path="/admin/crm/customers">

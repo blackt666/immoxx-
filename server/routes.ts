@@ -641,15 +641,6 @@ export async function registerRoutes(app: Express) {
     });
   });
 
-  // Get current user endpoint
-  app.get("/api/auth/me", (req, res) => {
-    if (req.session?.user && req.session?.isAuthenticated) {
-      res.json(req.session.user);
-    } else {
-      res.status(401).json({ message: "Nicht angemeldet" });
-    }
-  });
-
   // Logout endpoint
     app.post("/api/auth/logout", (req, res) => {
     req.session.destroy(() => {
@@ -691,6 +682,53 @@ export async function registerRoutes(app: Express) {
         sessionId: req.sessionID
       });
       
+      // Check if authentication is disabled for development
+      if (!AUTH_ENABLED) {
+        // Support both old and new admin credentials for compatibility
+        const validCredentials = [
+          { username: 'admin', password: 'admin123' },     // Old credentials
+          { username: 'admin', password: 'bodensee2025' }  // New credentials
+        ];
+        
+        const isValidLogin = validCredentials.some(cred => 
+          cred.username === username && cred.password === password
+        );
+        
+        if (!isValidLogin) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return res.status(401).json({ message: "Ungültige Anmeldedaten" });
+        }
+        
+        // Mock successful authentication for development
+        const mockUserData = {
+          id: 'mock-admin',
+          username: 'admin',
+          name: 'admin',
+          role: 'admin',
+          email: 'admin@bodensee-immobilien.de',
+          loginTime: new Date().toISOString()
+        };
+        
+        req.session.regenerate((regenerateErr) => {
+          if (regenerateErr) {
+            return res.status(500).json({ message: "Session-Fehler" });
+          }
+          
+          req.session.user = mockUserData;
+          req.session.isAuthenticated = true;
+          
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              return res.status(500).json({ message: "Session-Fehler" });
+            }
+            
+            console.log('✅ Mock admin login successful (AUTH_ENABLED=false)');
+            res.json(mockUserData);
+          });
+        });
+        return;
+      }
+
       // SECURITY: Secure admin authentication with fail-safe behavior
       const isAuthenticated = await authenticateAdmin(username, password, clientId);
       
@@ -793,7 +831,7 @@ export async function registerRoutes(app: Express) {
       return;
     }
     
-    if (req.session.user) {
+    if (req.session?.user && req.session?.isAuthenticated) {
       res.json(req.session.user);
     } else {
       res.status(401).json({ message: "Nicht angemeldet" });

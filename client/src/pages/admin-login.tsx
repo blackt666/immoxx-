@@ -7,10 +7,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useLogin } from "@/lib/queryClient";
 import { LogIn, Eye, EyeOff, Shield, Loader2 } from "lucide-react";
 import type { AuthResponse } from "@/types/admin";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [credentials, setCredentials] = useState({
     username: "",
     password: "",
@@ -19,14 +21,22 @@ export default function AdminLogin() {
 
   const loginMutation = useLogin();
 
-  // Handle login success
-  const handleLoginSuccess = (data: AuthResponse) => {
+  // Handle login success with proper query invalidation
+  const handleLoginSuccess = async (data: AuthResponse) => {
     console.log('✅ Login successful via useLogin hook:', data);
     toast({
       title: "Erfolgreich angemeldet",
       description: "Willkommen zurück im Admin-Dashboard",
     });
-    setLocation("/admin");
+    
+    // Force invalidate and refetch auth queries to ensure ProtectedRoute updates
+    await queryClient.invalidateQueries({ queryKey: ['user'] });
+    await queryClient.refetchQueries({ queryKey: ['user'] });
+    
+    // Small delay to ensure auth state is fully updated
+    setTimeout(() => {
+      setLocation("/admin");
+    }, 200);
   };
 
   // Handle login error
