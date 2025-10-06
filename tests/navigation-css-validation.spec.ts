@@ -13,11 +13,11 @@ test.describe('Navigation CSS and Component Analysis', () => {
     const mobileFirstPatterns = [
       'md:hidden',           // Mobile menu button visibility
       'hidden md:block',     // Desktop navigation visibility  
-      'md:flex',            // Responsive flex display
-      'lg:px-',             // Large screen padding
-      'xl:flex',            // Extra large screen flex
-      '2xl:flex',           // Extra extra large screen flex
-      'sm:px-',             // Small screen padding
+      'flex items-center',   // Responsive flex display
+      'lg:px-',              // Large screen padding
+      'xl:flex',             // Extra large screen flex
+      '2xl:flex',            // Extra extra large screen flex
+      'hidden 2xl:flex',     // Progressive disclosure
     ];
     
     mobileFirstPatterns.forEach(pattern => {
@@ -56,6 +56,7 @@ test.describe('Navigation CSS and Component Analysis', () => {
       'backdrop-blur-md',            // Backdrop blur
       'border-t border-gray',        // Section separators
       'px-2 pt-2 pb-3 space-y-1',   // Mobile menu spacing
+      'md:hidden',                   // Mobile visibility
     ];
     
     mobileMenuPatterns.forEach(pattern => {

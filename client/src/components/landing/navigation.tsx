@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Menu, X, Phone, Mail, Bot, Calculator, User, Calendar, Zap } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Menu, X, Phone, Bot, User, Calendar, Zap } from "lucide-react";
 import { Link } from "wouter";
 // Logo temporarily removed - using text logo instead
 // import logoPath from "@assets/logo-mueller-immobilien-bodensee_1757809230389.png";
@@ -56,8 +55,6 @@ export default function Navigation() {
     },
   ];
 
-  const allNavItems = [...mainNavItems, ...aiServiceItems, ...humanServiceItems];
-
   const handleNavigation = (href: string, external?: boolean) => {
     if (external) {
       window.location.href = href;
@@ -74,13 +71,9 @@ export default function Navigation() {
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         isScrolled
-          ? 'backdrop-blur-md shadow-lg'
+          ? 'backdrop-blur-md shadow-lg bg-white/95 border-b border-[#D9CDBF]/30'
           : 'bg-transparent'
-      }`}
-      style={isScrolled ? {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderBottom: '1px solid rgba(217, 205, 191, 0.3)'
-      } : {}}>
+      }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 gap-4">
           {/* Logo */}

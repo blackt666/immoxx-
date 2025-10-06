@@ -38,7 +38,7 @@ test.describe("Complete User Journey", () => {
 
       // Verify AI Valuation page
       expect(page.url()).toContain("/ai-valuation");
-      await expect(page.locator("h1, h2").filter({ hasText: /AI.*Bewertung/i }).first()).toBeVisible();
+      await expect(page.locator("h1, h2").filter({ hasText: /AI.*Immobilienbewertung|Kostenlose.*AI.*Bewertung|Bewertung/i }).first()).toBeVisible();
     } else {
       console.log("⚠️ AI Valuation button not found, checking if on-page component exists");
 

@@ -134,100 +134,99 @@ export class RateLimitingService {
     const maxAttemptsLong = 10; // Max 10 attempts per hour
 
     try {
-      return await db.transaction(async (tx) => {
-        const [existing] = await tx
-          .select()
-          .from(rateLimitEntries)
-          .where(
-            and(
-              eq(rateLimitEntries.identifier, clientId),
-              eq(rateLimitEntries.endpoint, 'login')
-            )
+      // Get existing record first
+      const [existing] = await db
+        .select()
+        .from(rateLimitEntries)
+        .where(
+          and(
+            eq(rateLimitEntries.identifier, clientId),
+            eq(rateLimitEntries.endpoint, 'login')
           )
-          .limit(1);
+        )
+        .limit(1);
 
-        if (!existing) {
-          const resetTime = new Date(now + shortWindowMs);
+      if (!existing) {
+        const resetTime = new Date(now + shortWindowMs);
 
-          await tx.insert(rateLimitEntries).values({
-            identifier: clientId,
-            endpoint: 'login',
-            count: 1,
-            resetTime,
-            firstAttemptTime: nowDate,
-            blocked: false,
-            createdAt: nowDate,
-            updatedAt: nowDate,
-          });
-
-          return {
-            allowed: true,
-            currentCount: 1,
-            resetTime: resetTime.getTime(),
-          };
-        }
-
-        let count = typeof existing.count === 'number' ? existing.count : 0;
-        let resetTime = RateLimitingService.normalizeDate(existing.resetTime, nowDate);
-        let firstAttempt = RateLimitingService.normalizeDate(
-          existing.firstAttemptTime ?? existing.createdAt,
-          nowDate
-        );
-        let blocked = !!existing.blocked;
-
-        if (resetTime.getTime() <= now) {
-          count = 1;
-          resetTime = new Date(now + shortWindowMs);
-          firstAttempt = nowDate;
-          blocked = false;
-        } else {
-          count += 1;
-          const timeSinceFirst = now - firstAttempt.getTime();
-
-          if (timeSinceFirst < longWindowMs && count > maxAttemptsLong) {
-            blocked = true;
-            resetTime = new Date(now + longWindowMs);
-          } else {
-            blocked = false;
-            if (count > maxAttemptsShort) {
-              resetTime = new Date(now + shortWindowMs);
-            }
-          }
-        }
-
-        await tx
-          .update(rateLimitEntries)
-          .set({
-            count,
-            resetTime,
-            firstAttemptTime: firstAttempt,
-            blocked,
-            updatedAt: nowDate,
-          })
-          .where(
-            and(
-              eq(rateLimitEntries.identifier, clientId),
-              eq(rateLimitEntries.endpoint, 'login')
-            )
-          );
-
-        const resetMillis = resetTime.getTime();
-
-        if (blocked) {
-          return {
-            allowed: false,
-            resetTime: resetMillis,
-            retryAfter: Math.max(0, Math.ceil((resetMillis - now) / 1000)),
-            currentCount: count,
-          };
-        }
+        await db.insert(rateLimitEntries).values({
+          identifier: clientId,
+          endpoint: 'login',
+          count: 1,
+          resetTime,
+          firstAttemptTime: nowDate,
+          blocked: false,
+          createdAt: nowDate,
+          updatedAt: nowDate,
+        });
 
         return {
           allowed: true,
-          currentCount: count,
-          resetTime: resetMillis,
+          currentCount: 1,
+          resetTime: resetTime.getTime(),
         };
-      });
+      }
+
+      let count = typeof existing.count === 'number' ? existing.count : 0;
+      let resetTime = RateLimitingService.normalizeDate(existing.resetTime, nowDate);
+      let firstAttempt = RateLimitingService.normalizeDate(
+        existing.firstAttemptTime ?? existing.createdAt,
+        nowDate
+      );
+      let blocked = !!existing.blocked;
+
+      if (resetTime.getTime() <= now) {
+        count = 1;
+        resetTime = new Date(now + shortWindowMs);
+        firstAttempt = nowDate;
+        blocked = false;
+      } else {
+        count += 1;
+        const timeSinceFirst = now - firstAttempt.getTime();
+
+        if (timeSinceFirst < longWindowMs && count > maxAttemptsLong) {
+          blocked = true;
+          resetTime = new Date(now + longWindowMs);
+        } else {
+          blocked = false;
+          if (count > maxAttemptsShort) {
+            resetTime = new Date(now + shortWindowMs);
+          }
+        }
+      }
+
+      await db
+        .update(rateLimitEntries)
+        .set({
+          count,
+          resetTime,
+          firstAttemptTime: firstAttempt,
+          blocked,
+          updatedAt: nowDate,
+        })
+        .where(
+          and(
+            eq(rateLimitEntries.identifier, clientId),
+            eq(rateLimitEntries.endpoint, 'login')
+          )
+        );
+
+      const resetMillis = resetTime.getTime();
+
+      if (blocked) {
+        return {
+          allowed: false,
+          resetTime: resetMillis,
+          retryAfter: Math.max(0, Math.ceil((resetMillis - now) / 1000)),
+          currentCount: count,
+        };
+      }
+
+      return {
+        allowed: true,
+        currentCount: count,
+        resetTime: resetMillis,
+      };
     } catch (error) {
       console.error('🔒 Database rate limiting failed, using in-memory fallback:', error);
       return this.checkLoginRateLimitFallback(clientId, now, shortWindowMs, longWindowMs, maxAttemptsShort, maxAttemptsLong);
@@ -447,7 +446,7 @@ export class RateLimitingService {
    * Clean up expired rate limit entries to prevent memory leaks
    * OPTIMIZED: Uses efficient indexed deletes for better performance
    */
-  static async cleanupExpiredEntries(tx: any, endpoint?: string): Promise<void> {
+  static async cleanupExpiredEntries(tx: any = null, endpoint?: string): Promise<void> {
     const now = new Date();
     
     if (endpoint) {

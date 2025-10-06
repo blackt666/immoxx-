@@ -14,7 +14,7 @@ test("Content Editor accessibility test", async ({ page }) => {
   });
 
   // Login
-  const usernameField = page.locator('input[name="username"], input[name="email"], input[placeholder*="nutzername"], input[placeholder*="admin"]').first();
+  const usernameField = page.locator('input[id="username"], input[name="username"], input[name="email"], input[placeholder*="Benutzername"], input[placeholder*="eingeben"]').first();
   const passwordField = page.locator('input[type="password"]').first();
   const submitButton = page.locator('button[type="submit"], button:has-text("Anmelden"), button:has-text("Login")').first();
 
@@ -130,7 +130,7 @@ test("Content Editor accessibility test", async ({ page }) => {
   }
 
   // Check browser console for errors
-  const logs = [];
+  const logs: string[] = [];
   page.on('console', (msg) => {
     if (msg.type() === 'error') {
       logs.push(`Console Error: ${msg.text()}`);

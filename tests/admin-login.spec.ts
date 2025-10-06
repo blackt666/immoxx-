@@ -16,7 +16,7 @@ test("admin login flow", async ({ page }) => {
   // Fill login form
   const usernameField = page
     .locator(
-      'input[name="username"], input[name="email"], input[placeholder*="nutzername"], input[placeholder*="admin"]',
+      'input[id="username"], input[name="username"], input[name="email"], input[placeholder*="Benutzername"], input[placeholder*="eingeben"]',
     )
     .first();
   const passwordField = page.locator('input[type="password"]').first();
@@ -65,7 +65,7 @@ test("admin dashboard exploration", async ({ page }) => {
   await page.goto(`${baseURL}/admin/login`, { waitUntil: "domcontentloaded" });
   await page
     .locator(
-      'input[name="username"], input[name="email"], input[placeholder*="nutzername"], input[placeholder*="admin"]',
+      'input[id="username"], input[name="username"], input[name="email"], input[placeholder*="Benutzername"], input[placeholder*="eingeben"]',
     )
     .first()
     .fill(ADMIN_USER);
@@ -102,7 +102,7 @@ test("admin dashboard exploration", async ({ page }) => {
         await page.waitForTimeout(500);
       }
     } catch (error) {
-      console.log(`⚠️ Could not navigate to item ${i + 1}: ${error.message}`);
+      console.log(`⚠️ Could not navigate to item ${i + 1}: ${(error as Error).message}`);
     }
   }
 

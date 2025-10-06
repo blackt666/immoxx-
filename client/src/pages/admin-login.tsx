@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useLogin } from "@/lib/queryClient";
 import { LogIn, Eye, EyeOff, Shield, Loader2 } from "lucide-react";
+import type { AuthResponse } from "@/types/admin";
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
@@ -20,8 +20,8 @@ export default function AdminLogin() {
   const loginMutation = useLogin();
 
   // Handle login success
-  const handleLoginSuccess = (userData: any) => {
-    console.log('✅ Login successful via useLogin hook:', userData);
+  const handleLoginSuccess = (data: AuthResponse) => {
+    console.log('✅ Login successful via useLogin hook:', data);
     toast({
       title: "Erfolgreich angemeldet",
       description: "Willkommen zurück im Admin-Dashboard",
@@ -30,7 +30,7 @@ export default function AdminLogin() {
   };
 
   // Handle login error
-  const handleLoginError = (error: any) => {
+  const handleLoginError = (error: Error) => {
     console.error('❌ Login error:', error);
     toast({
       title: "Anmeldung fehlgeschlagen",
@@ -60,13 +60,13 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[var(--bodensee-shore)] via-[var(--bodensee-sand)] to-[var(--bodensee-shore)]">
       <div className="max-w-md w-full space-y-8">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 border" style={{borderColor: 'var(--bodensee-sand)'}}>
+        <div className="bg-white rounded-2xl shadow-2xl p-8 border border-[#D9CDBF]">
           <div className="text-center mb-8">
             <div className="mx-auto h-16 w-16 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br from-[var(--bodensee-deep)] to-[var(--bodensee-water)]">
               <Shield className="h-8 w-8 text-white" />
             </div>
-            <h2 className="text-3xl font-bold" style={{color: 'var(--bodensee-deep)'}}>Admin Login</h2>
-            <p className="mt-2 text-sm" style={{color: 'var(--bodensee-stone)'}}>
+            <h2 className="text-3xl font-bold text-[#566B73]">Admin Login</h2>
+            <p className="mt-2 text-sm text-[#8A8A8A]">
               Bodensee Immobilien Verwaltung
             </p>
           </div>

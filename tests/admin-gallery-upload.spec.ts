@@ -27,7 +27,7 @@ test.describe("Admin Gallery Upload & Management", () => {
       timeout: 10000
     });
 
-    const usernameField = page.locator('input[name="username"], input[type="text"]').first();
+    const usernameField = page.locator('input[id="username"], input[name="username"], input[type="text"], input[placeholder*="Benutzername"], input[placeholder*="eingeben"]').first();
     const passwordField = page.locator('input[type="password"]').first();
     const submitButton = page.locator('button[type="submit"]').first();
 

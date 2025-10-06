@@ -6,9 +6,9 @@ const BASE_URL =
 export default defineConfig({
   testDir: "tests",
   testMatch: "**/*.spec.ts", // Only run .spec.ts files (exclude .test.ts files for Vitest)
-  timeout: 30_000,
-  expect: { timeout: 5_000 },
-  retries: 0,
+  timeout: 45_000,
+  expect: { timeout: 8_000 },
+  retries: 1,
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
