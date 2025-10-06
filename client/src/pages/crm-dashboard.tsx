@@ -140,7 +140,7 @@ export default function CRMDashboard() {
       const res = await fetch(`/api/crm/v2/leads/${leadId}/move-stage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pipeline_stage: newStage }),
+        body: JSON.stringify({ stage: newStage }),
       });
       if (!res.ok) throw new Error('Failed to move lead');
       return res.json();

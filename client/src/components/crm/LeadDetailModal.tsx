@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { useQuery } from '@tanstack/react-query';
 
 interface Lead {
   id: string;
@@ -41,6 +42,31 @@ interface LeadDetailModalProps {
 
 export function LeadDetailModal({ lead, open, onClose, onEdit, onDelete }: LeadDetailModalProps) {
   if (!lead) return null;
+
+  // Fetch activities for this lead
+  const { data: activitiesData } = useQuery({
+    queryKey: ['lead-activities', lead.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/crm/v2/leads/${lead.id}/activities`);
+      if (!res.ok) throw new Error('Failed to fetch activities');
+      return res.json();
+    },
+    enabled: open && !!lead.id,
+  });
+
+  // Fetch tasks for this lead
+  const { data: tasksData } = useQuery({
+    queryKey: ['lead-tasks', lead.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/crm/v2/tasks/lead/${lead.id}`);
+      if (!res.ok) throw new Error('Failed to fetch tasks');
+      return res.json();
+    },
+    enabled: open && !!lead.id,
+  });
+
+  const activities = activitiesData?.data || [];
+  const tasks = tasksData?.data || [];
 
   const temperatureColors = {
     hot: 'bg-red-500 text-white',
@@ -142,12 +168,58 @@ export function LeadDetailModal({ lead, open, onClose, onEdit, onDelete }: LeadD
 
           <TabsContent value="activity" className="space-y-4">
             <div className="space-y-3">
-              <div className="text-center py-8 text-gray-400">
-                <p className="text-sm">Keine Aktivitäten vorhanden</p>
-                <Button size="sm" className="mt-2" variant="outline">
-                  <span className="mr-2">➕</span> Aktivität hinzufügen
-                </Button>
-              </div>
+              {activities.length > 0 ? (
+                <>
+                  <h4 className="text-sm font-semibold" style={{ color: 'var(--bodensee-deep)' }}>
+                    Aktivitäten-Timeline
+                  </h4>
+                  {activities.map((activity: any) => (
+                    <div key={activity.id} className="border-l-2 border-gray-300 pl-4 pb-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium">{activity.type}</p>
+                          <p className="text-xs text-gray-500">{activity.description}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(activity.created_at).toLocaleString('de-DE')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <p className="text-sm">Keine Aktivitäten vorhanden</p>
+                </div>
+              )}
+              
+              {tasks.length > 0 && (
+                <>
+                  <h4 className="text-sm font-semibold mt-4" style={{ color: 'var(--bodensee-deep)' }}>
+                    Aufgaben
+                  </h4>
+                  {tasks.map((task: any) => (
+                    <div key={task.id} className="border rounded p-3 mb-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium">{task.title}</p>
+                          {task.description && (
+                            <p className="text-xs text-gray-500 mt-1">{task.description}</p>
+                          )}
+                          {task.due_date && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              Fällig: {new Date(task.due_date).toLocaleDateString('de-DE')}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
+                          {task.status === 'completed' ? '✅' : '⏳'}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </TabsContent>
 
