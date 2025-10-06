@@ -14,6 +14,7 @@ import calendarRouter from './routes/calendar.js';
 import importRouter from './routes/import.js';
 import templatesRouter from './routes/templates.js';
 import deepseekRouter from './routes/deepseek.js';
+import securityRouter from './routes/security.js';
 import multer from 'multer';
 import { imageUpload, importUpload, backupUpload } from './lib/multer-config.js';
 import { PropertyValuationData, generateSEOKeywords } from "./openaiService.js";
@@ -24,6 +25,7 @@ import Papa from 'papaparse';
 import { z } from 'zod';
 import { hashPassword, verifyPassword, isWeakPasswordHash } from './lib/crypto.js';
 import { log } from './lib/logger.js';
+import { securityMonitoringService, SecurityEventType, SecurityEventSeverity } from './services/securityMonitoringService.js';
 
 const uploadDir = path.join(process.cwd(), 'uploads');
 
@@ -323,18 +325,15 @@ const logSecurityEvent = (eventType: string, details: Record<string, unknown> = 
   const logLevel = event.severity === 'critical' || event.severity === 'high' ? 'error' : 'warn';
   console[logLevel](`🔒 SECURITY EVENT [${event.severity.toUpperCase()}] ${eventType}:`, JSON.stringify(event, null, 2));
   
-  // In production, send critical events to monitoring service if configured
-  if (process.env.NODE_ENV === 'production' && (event.severity === 'critical' || event.severity === 'high')) {
-    // Integrate with security monitoring service via webhook if configured
-    if (process.env.SECURITY_WEBHOOK_URL) {
-      // Send to webhook (e.g., Datadog, New Relic, Slack, etc.)
-      fetch(process.env.SECURITY_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(event)
-      }).catch(err => log.error('Failed to send security event to webhook:', err));
-    }
-  }
+  // Use the new SecurityMonitoringService for enhanced monitoring
+  securityMonitoringService.logEvent({
+    type: mapEventTypeToSecurityEventType(eventType),
+    severity: mapSeverityToSecurityEventSeverity(event.severity),
+    message: `Security event: ${eventType}`,
+    ipAddress: details.clientId as string,
+    userId: details.username as string,
+    metadata: details,
+  }).catch(err => log.error('Failed to log security event:', err));
 };
 
 const getSeverityLevel = (eventType: string): SecurityEvent['severity'] => {
@@ -346,6 +345,39 @@ const getSeverityLevel = (eventType: string): SecurityEvent['severity'] => {
   if (highEvents.includes(eventType)) return 'high';
   if (mediumEvents.includes(eventType)) return 'medium';
   return 'low';
+};
+
+// Map legacy event types to new SecurityEventType enum
+const mapEventTypeToSecurityEventType = (eventType: string): SecurityEventType => {
+  const mapping: Record<string, SecurityEventType> = {
+    'auth_failure_invalid_credentials': SecurityEventType.AUTH_FAILURE,
+    'auth_failure_missing_credentials': SecurityEventType.AUTH_FAILURE,
+    'auth_failure_invalid_input_type': SecurityEventType.AUTH_FAILURE,
+    'auth_failure_input_too_long': SecurityEventType.AUTH_FAILURE,
+    'auth_failure_no_dev_password': SecurityEventType.AUTH_FAILURE,
+    'auth_success': SecurityEventType.AUTH_SUCCESS,
+    'auth_success_dev_password': SecurityEventType.AUTH_SUCCESS,
+    'login_rate_limit_exceeded': SecurityEventType.RATE_LIMIT_EXCEEDED,
+    'admin_rate_limit_exceeded': SecurityEventType.RATE_LIMIT_EXCEEDED,
+    'token_expired': SecurityEventType.TOKEN_EXPIRED,
+    'calendar_connection_failed': SecurityEventType.CALENDAR_CONNECTION_FAILED,
+    'unauthorized_access': SecurityEventType.UNAUTHORIZED_ACCESS,
+    'suspicious_activity': SecurityEventType.SUSPICIOUS_ACTIVITY,
+  };
+  
+  return mapping[eventType] || SecurityEventType.SUSPICIOUS_ACTIVITY;
+};
+
+// Map legacy severity to new SecurityEventSeverity enum
+const mapSeverityToSecurityEventSeverity = (severity: string): SecurityEventSeverity => {
+  const mapping: Record<string, SecurityEventSeverity> = {
+    'critical': SecurityEventSeverity.CRITICAL,
+    'high': SecurityEventSeverity.HIGH,
+    'medium': SecurityEventSeverity.MEDIUM,
+    'low': SecurityEventSeverity.LOW,
+  };
+  
+  return mapping[severity] || SecurityEventSeverity.MEDIUM;
 };
 
 // SECURITY: Database-based admin user management with secure password hashing
@@ -629,6 +661,9 @@ export async function registerRoutes(app: Express) {
 
   // DeepSeek AI routes - secured with requireAuth
   app.use('/api/deepseek', requireAuth, deepseekRouter);
+
+  // Security monitoring routes - secured with requireAuth
+  app.use('/api/security', requireAuth, securityRouter);
 
   // Enhanced health endpoint with ready state - matches main health endpoint structure
   app.get("/api/health", (req, res) => {
