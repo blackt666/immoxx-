@@ -15,7 +15,14 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "off",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [{ 
+    name: "chromium", 
+    use: { 
+      ...devices["Desktop Chrome"],
+      // Use system Chrome if Playwright browsers are not installed
+      channel: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? undefined : 'chrome'
+    } 
+  }],
   reporter: [
     ["html", { outputFolder: "logs/playwright-report" }],
     ["json", { outputFile: "logs/test-results.json" }],

@@ -2,7 +2,7 @@
 import { test, expect } from "@playwright/test";
 
 test("admin login form validation", async ({ page }) => {
-  const baseURL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+  const baseURL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5001}`;
   const ADMIN_USER = process.env.ADMIN_USERNAME || "admin";
   const ADMIN_PASS = process.env.ADMIN_PASSWORD || "bodensee2025";
   
@@ -51,7 +51,7 @@ test("admin login form validation", async ({ page }) => {
 });
 
 test("admin page accessibility", async ({ page }) => {
-  const baseURL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+  const baseURL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5001}`;
   console.log("✅ Testing admin page accessibility...");
   
   // Test if admin login page loads

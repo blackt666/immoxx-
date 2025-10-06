@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Rate Limiting System', () => {
-  const baseURL = process.env.BASE_URL || 'http://localhost:5000';
+  const baseURL = process.env.BASE_URL || 'http://localhost:5001';
   const testClientId = '127.0.0.1';
 
   test.beforeEach(async ({ request }) => {
@@ -207,7 +207,7 @@ test.describe('Rate Limiting System', () => {
 test.describe('Rate Limiting Performance', () => {
   
   test('should not cause memory leaks with many clients', async ({ request }) => {
-    const baseURL = process.env.BASE_URL || 'http://localhost:5000';
+    const baseURL = process.env.BASE_URL || 'http://localhost:5001';
     
     // Simulate many different clients
     const promises = [];
