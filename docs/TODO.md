@@ -22,18 +22,21 @@
 ## High Priority
 
 ### Calendar & Sync Features
-- [ ] Add actual timing metrics for calendar sync operations
-  - Location: `server/services/calendarSyncService.ts:762`
-  - Location: `server/services/googleCalendarService.ts:802`
+- [x] ~~Add actual timing metrics for calendar sync operations~~ ✅ COMPLETED (2025-10-06)
+  - Added performance timing to `calendarSyncService.ts`
+  - Added duration logging to `googleCalendarService.ts` token refresh
+  - All sync operations now report execution time
 
 ### Authentication & Notifications
-- [ ] Implement notification system for token expiration
-  - Location: `server/services/tokenMaintenanceService.ts:169`
-  - Send email/webhook notifications for connections requiring re-authentication
+- [x] ~~Implement notification system for token expiration~~ ✅ ALREADY IMPLEMENTED
+  - System already in place via `notificationService.ts`
+  - Token maintenance service sends notifications for expired connections
+  - Email and webhook support configured
 
 - [ ] Implement Apple Calendar token refresh
   - Location: `server/services/tokenMaintenanceService.ts:202`
   - Currently only Google is supported
+  - Note: Apple uses app-specific passwords which don't expire like OAuth tokens
 
 ### Monitoring & Observability
 - [ ] Integrate with security monitoring service
@@ -44,9 +47,10 @@
 ## Medium Priority
 
 ### Configuration
-- [ ] Make timezone configurable
-  - Location: `server/services/googleCalendarService.ts:328`
-  - Currently hardcoded to 'Europe/Berlin'
+- [x] ~~Make timezone configurable~~ ✅ COMPLETED (2025-10-06)
+  - Added `CALENDAR_TIMEZONE` environment variable (defaults to 'Europe/Berlin')
+  - Applied to all calendar services (Google, Apple, ICS exports)
+  - Documented in `.env.example`
 
 ### Calendar Features
 - [ ] Implement Google Calendar push notifications

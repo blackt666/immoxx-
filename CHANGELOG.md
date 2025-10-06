@@ -1,5 +1,47 @@
 # Changelog - Bodensee Immobilien
 
+## [1.2.0] - 2025-10-06
+
+### ✨ Features
+
+- **Calendar Sync**: Performance timing metrics added to all sync operations
+- **Configuration**: Timezone now configurable via `CALENDAR_TIMEZONE` environment variable
+- **Monitoring**: Enhanced observability with duration logging for calendar operations
+
+### 🐛 Bug Fixes
+
+- **Dependencies**: Fixed missing `@dnd-kit` packages causing build failures
+  - Added `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+
+### 📊 Performance
+
+- **Calendar Sync**: Added millisecond-precision timing for:
+  - Complete sync operations
+  - CRM to Calendar synchronization
+  - Google Calendar token refresh
+- **Observability**: All sync operations now report execution time
+
+### 🔧 Configuration
+
+- **Timezone**: Added `CALENDAR_TIMEZONE` environment variable
+  - Defaults to `Europe/Berlin` for backward compatibility
+  - Applied to Google Calendar, Apple Calendar, and ICS exports
+  - Supports any IANA timezone identifier
+
+### 📚 Documentation
+
+- **TODO.md**: Updated with completion status
+- **ENHANCEMENTS-2025-10-06.md**: Comprehensive enhancement documentation
+- Verified notification system is fully implemented
+
+### ✅ Verified Existing Features
+
+- Token expiration notification system (already implemented)
+- Email and webhook notification support
+- Automatic re-authentication alerts
+
+---
+
 ## [1.1.0] - 2025-10-05
 
 ### ✨ Features
