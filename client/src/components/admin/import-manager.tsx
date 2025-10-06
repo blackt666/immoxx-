@@ -5,7 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, FileSpreadsheet, Database, Download } from 'lucide-react';
+import {
+  Upload,
+  Download
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
@@ -13,7 +16,7 @@ import Papa from 'papaparse';
 export default function ImportManager() {
   const { toast } = useToast();
   const [isImporting, setIsImporting] = useState(false);
-  const [importData, setImportData] = useState<any[]>([]);
+  const [importData, setImportData] = useState<unknown[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,7 +76,8 @@ export default function ImportManager() {
         });
         setImportData([]);
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Import fehler:', err);
       toast({
         title: "Import-Fehler",
         description: "Fehler beim Importieren der Daten",
@@ -141,14 +145,24 @@ export default function ImportManager() {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button onClick={() => processImport('properties')}>
-                      <Database className="w-4 h-4 mr-2" />
+                    <Button 
+                      onClick={() => processImport('properties')}
+                      disabled={isImporting}
+                    >
                       Als Immobilien importieren
                     </Button>
-                    <Button onClick={() => processImport('customers')} variant="outline">
+                    <Button 
+                      onClick={() => processImport('customers')} 
+                      variant="outline"
+                      disabled={isImporting}
+                    >
                       Als Kunden importieren
                     </Button>
-                    <Button onClick={() => processImport('inquiries')} variant="outline">
+                    <Button 
+                      onClick={() => processImport('inquiries')} 
+                      variant="outline"
+                      disabled={isImporting}
+                    >
                       Als Anfragen importieren
                     </Button>
                   </div>

@@ -96,7 +96,8 @@ Received: <element(s) not found>
 - **Tests:** `ai-valuation-deepseek.spec.ts`
 - **Problem:** Page Navigation Issues
 - **Symptom:**
-  ```
+
+  ```javascript
   Error: expect(locator).toBeVisible() failed
   Locator: locator('h1, h2').filter({ hasText: /AI.*Bewertung|Valuation/i })
   ```
