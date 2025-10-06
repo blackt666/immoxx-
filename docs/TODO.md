@@ -1,6 +1,32 @@
 # ImmoXX - Feature Roadmap & TODOs
 
-## 🎉 Recently Completed (2025-10-02)
+## 🎉 Recently Completed (2025-10-06)
+
+### Timing Metrics Implementation ✅
+- [x] Calendar sync service timing tracking
+  - Connection test timing
+  - CRM-to-calendar sync timing
+  - Calendar-to-CRM sync timing
+  - Total operation timing with detailed breakdown
+- [x] Google Calendar service performance metrics
+  - createEvent, updateEvent, deleteEvent, getEvents timing
+  - Operation history tracking (last 100 operations)
+  - Statistical analysis (average, min, max, success rate)
+  - Per-operation performance tracking
+- [x] Enhanced logging with timing information
+
+### Configuration Improvements ✅
+- [x] Timezone already configurable via CALENDAR_TIMEZONE environment variable
+  - Defaults to 'Europe/Berlin' if not set
+  - Applied consistently across all calendar operations
+
+### Token Maintenance ✅
+- [x] Notification system for token expiration already implemented
+  - Email notifications via NotificationService
+  - Webhook notifications
+  - Location: `server/services/tokenMaintenanceService.ts:402-427`
+
+## 🎉 Previously Completed (2025-10-02)
 
 ### DeepSeek AI Integration ✅
 - [x] DeepSeek API Service implementiert
@@ -21,19 +47,11 @@
 
 ## High Priority
 
-### Calendar & Sync Features
-- [ ] Add actual timing metrics for calendar sync operations
-  - Location: `server/services/calendarSyncService.ts:762`
-  - Location: `server/services/googleCalendarService.ts:802`
-
-### Authentication & Notifications
-- [ ] Implement notification system for token expiration
-  - Location: `server/services/tokenMaintenanceService.ts:169`
-  - Send email/webhook notifications for connections requiring re-authentication
-
+### Authentication & Calendar
 - [ ] Implement Apple Calendar token refresh
-  - Location: `server/services/tokenMaintenanceService.ts:202`
-  - Currently only Google is supported
+  - Location: `server/services/tokenMaintenanceService.ts:227-230`
+  - Note: Apple uses app-specific passwords which don't expire like OAuth tokens
+  - Service currently disabled/stubbed in `server/services/appleCalendarService.ts`
 
 ### Monitoring & Observability
 - [ ] Integrate with security monitoring service
@@ -42,11 +60,6 @@
   - Required for production security event tracking
 
 ## Medium Priority
-
-### Configuration
-- [ ] Make timezone configurable
-  - Location: `server/services/googleCalendarService.ts:328`
-  - Currently hardcoded to 'Europe/Berlin'
 
 ### Calendar Features
 - [ ] Implement Google Calendar push notifications

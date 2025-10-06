@@ -194,4 +194,23 @@ router.post('/maintenance/run', authMiddleware, async (req: Request, res: Respon
     }
 });
 
+// Route to get timing statistics for calendar operations
+router.get('/stats/timing', authMiddleware, async (req: Request, res: Response) => {
+    try {
+        const stats = googleCalendarService.getTimingStatistics();
+        res.status(200).json({
+            success: true,
+            data: stats,
+            timestamp: new Date().toISOString(),
+        });
+    } catch (error: unknown) {
+        const err = error as Error;
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to retrieve timing statistics', 
+            error: err.message 
+        });
+    }
+});
+
 export default router;
