@@ -1,0 +1,52 @@
+# Exclude development and build artifacts
+node_modules
+.git
+.github
+.env
+.env.*
+!.env.example
+!.env.production
+
+# Test files
+tests
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+test-*.js
+playwright.config.ts
+playwright-validation.config.ts
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Build artifacts that will be regenerated
+.local
+.snapshots
+server.pid
+cookies.txt
+
+# Scripts
+scripts
+*.sh
+!quick-deploy.sh
+
+# Logs
+logs
+*.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Database files (SQLite will be created fresh)
+database
+*.sqlite
+*.sqlite-*
+
+# PM2
+ecosystem.config.json

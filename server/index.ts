@@ -458,4 +458,10 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-startServer();
+// Start server in regular mode (non-Vercel)
+if (process.env.VERCEL !== '1') {
+  startServer();
+}
+
+// Export app for Vercel serverless
+export default app;
