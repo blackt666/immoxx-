@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { db } from "../../db";
 import { eq, and, gte, desc, asc, sql, isNull } from "drizzle-orm";
 import { crmLeads, crmActivities, crmTasks } from "../../database/schema/crm";
+import { SendGridService } from "../sendgridService.js";
 
 export interface LeadFilters {
   status?: string;
@@ -201,6 +202,21 @@ export class LeadService {
       description: `Lead captured from ${data.source}`,
       created_by: data.created_by,
     });
+
+    // Send notification email if admin email is configured
+    if (process.env.ADMIN_EMAIL) {
+      try {
+        await SendGridService.sendLeadNotification(
+          process.env.ADMIN_EMAIL,
+          `${lead.first_name} ${lead.last_name}`,
+          lead.email,
+          lead.phone || undefined
+        );
+      } catch (error) {
+        console.error('Failed to send lead notification email:', error);
+        // Don't fail the lead creation if email fails
+      }
+    }
 
     return lead;
   }

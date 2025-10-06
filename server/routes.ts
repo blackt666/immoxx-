@@ -618,11 +618,17 @@ export async function registerRoutes(app: Express) {
   const activitiesRouterV2 = await import('./routes/crm/activities.js');
   const tasksRouterV2 = await import('./routes/crm/tasks.js');
   const calendarRouterV2 = await import('./routes/crm/calendar.js');
+  const analyticsRouterV2 = await import('./routes/crm/analytics.js');
+  const importRouterV2 = await import('./routes/crm/import.js');
+  const notificationsRouterV2 = await import('./routes/crm/notifications.js');
 
   app.use('/api/crm/v2/leads', requireAuth, leadsRouterV2.default);
   app.use('/api/crm/v2/activities', requireAuth, activitiesRouterV2.default);
   app.use('/api/crm/v2/tasks', requireAuth, tasksRouterV2.default);
   app.use('/api/crm/v2/calendar', requireAuth, calendarRouterV2.default);
+  app.use('/api/crm/v2/analytics', requireAuth, analyticsRouterV2.default);
+  app.use('/api/crm/v2/import', requireAuth, importRouterV2.default);
+  app.use('/api/crm/v2/notifications', requireAuth, notificationsRouterV2.default);
 
   // Calendar integration routes - secured with requireAuth
   app.use('/api/calendar', requireAuth, calendarRouter);
