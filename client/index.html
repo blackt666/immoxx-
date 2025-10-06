@@ -42,6 +42,18 @@
     <meta name="theme-color" content="#4A90E2" />
     <meta name="msapplication-TileColor" content="#4A90E2" />
 
+    <!-- Performance Optimization: Resource Hints -->
+    <!-- DNS Prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://api.deepseek.com" />
+    
+    <!-- Preconnect to critical origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Preload critical assets -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+
     <!-- Critical CSS for instant color loading - prevents flicker -->
     <style>
       /* Bodensee Brand Colors - Inline for instant loading */

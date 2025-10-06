@@ -17,8 +17,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Vendor chunks - separate large libraries
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Core React libraries
+          'react-vendor': ['react', 'react-dom'],
+          'react-router': ['react-router-dom', 'wouter'],
+          
+          // UI component libraries
           'ui-vendor': [
             '@radix-ui/react-dialog',
             '@radix-ui/react-dropdown-menu',
@@ -27,18 +30,34 @@ export default defineConfig({
             '@radix-ui/react-toast',
             '@radix-ui/react-accordion',
             '@radix-ui/react-tooltip',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-checkbox',
+            '@radix-ui/react-label',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-switch',
           ],
+          
+          // Data management
           'query-vendor': ['@tanstack/react-query'],
+          
+          // Charts and visualizations
           'chart-vendor': ['recharts'],
-          // Admin pages - lazy loaded
-          'admin-crm': [
-            './src/pages/admin/crm-appointments.tsx',
-            './src/pages/admin/crm-customers.tsx',
-            './src/pages/admin/crm-leads.tsx',
-          ],
+          
+          // Forms and validation
+          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod', 'zod-validation-error'],
+          
+          // Icons
+          'icons-vendor': ['lucide-react', 'react-icons'],
+          
+          // Utilities
+          'utils-vendor': ['clsx', 'tailwind-merge', 'date-fns', 'class-variance-authority'],
         },
       },
     },
-    chunkSizeWarningLimit: 600, // Increase limit to 600kb
+    chunkSizeWarningLimit: 600,
+    sourcemap: false,
+    minify: 'esbuild',
+    target: 'es2020',
   },
 });
