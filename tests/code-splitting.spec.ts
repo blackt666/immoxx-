@@ -12,14 +12,14 @@ test.describe('Code Splitting Validation', () => {
     });
 
     // Load the landing page
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     const initialJsFiles = jsRequests.length;
     console.log(`Initial JS files loaded: ${initialJsFiles}`);
     
     // Navigate to admin login (should load additional chunks)
-    await page.goto('http://localhost:5003/admin/login');
+    await page.goto('http://localhost:5001/admin/login');
     await page.waitForLoadState('networkidle');
     
     const afterAdminJsFiles = jsRequests.length;
@@ -39,7 +39,7 @@ test.describe('Code Splitting Validation', () => {
       }
     });
 
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     // Filter for chunk files (usually have hash in filename)
@@ -63,7 +63,7 @@ test.describe('Code Splitting Validation', () => {
       }
     });
 
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     // Check for vendor chunks
@@ -87,10 +87,10 @@ test.describe('Code Splitting Validation', () => {
     });
 
     // Visit only public pages
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
-    await page.goto('http://localhost:5003/properties');
+    await page.goto('http://localhost:5001/properties');
     await page.waitForLoadState('networkidle');
     
     // Check that no admin-related chunks are loaded

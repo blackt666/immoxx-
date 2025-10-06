@@ -4,7 +4,7 @@ test.describe('Performance Benchmarks', () => {
   test('should load landing page within acceptable time', async ({ page }) => {
     const startTime = Date.now();
     
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('domcontentloaded');
     
     const domLoadTime = Date.now() - startTime;
@@ -43,7 +43,7 @@ test.describe('Performance Benchmarks', () => {
       }
     });
 
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     const jsResources = resources.filter(r => r.type === 'script');
@@ -77,7 +77,7 @@ test.describe('Performance Benchmarks', () => {
   });
 
   test('should measure time to interactive', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     
     // Wait for page to be interactive
     await page.waitForLoadState('networkidle');
@@ -109,7 +109,7 @@ test.describe('Performance Benchmarks', () => {
     // Load same page multiple times to test caching
     for (let i = 0; i < 3; i++) {
       const start = Date.now();
-      await page.goto('http://localhost:5003/', { waitUntil: 'networkidle' });
+      await page.goto('http://localhost:5001/', { waitUntil: 'networkidle' });
       const loadTime = Date.now() - start;
       loadTimes.push(loadTime);
       console.log(`Load ${i + 1}: ${loadTime}ms`);
@@ -142,7 +142,7 @@ test.describe('Performance Benchmarks', () => {
       }
     });
 
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     console.log(`Resources with caching: ${cachedResources.length}`);

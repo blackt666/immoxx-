@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Accessibility Audit', () => {
   test('should have proper ARIA labels on interactive elements', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     // Check buttons without accessible text
@@ -33,7 +33,7 @@ test.describe('Accessibility Audit', () => {
 
   test('should have proper form labels', async ({ page }) => {
     // Navigate to a page with forms (AI Valuation)
-    await page.goto('http://localhost:5003/ai-valuation');
+    await page.goto('http://localhost:5001/ai-valuation');
     await page.waitForLoadState('networkidle');
     
     const inputs = await page.locator('input[type="text"], input[type="email"], input[type="tel"], textarea').all();
@@ -65,7 +65,7 @@ test.describe('Accessibility Audit', () => {
   });
 
   test('should have sufficient color contrast', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     // Check primary text elements for color
@@ -89,7 +89,7 @@ test.describe('Accessibility Audit', () => {
   });
 
   test('should support keyboard navigation', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     // Try to tab through focusable elements
@@ -117,7 +117,7 @@ test.describe('Accessibility Audit', () => {
   });
 
   test('should have proper focus indicators', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     // Get a focusable button
@@ -140,7 +140,7 @@ test.describe('Accessibility Audit', () => {
   });
 
   test('should have skip to main content link', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     
     // Check for skip link (usually hidden but available)
     const skipLink = await page.locator('a[href="#main"], a[href="#content"], a:has-text("Skip")').count();
@@ -156,7 +156,7 @@ test.describe('Accessibility Audit', () => {
   });
 
   test('should have proper ARIA landmarks', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     // Check for landmark roles
@@ -181,7 +181,7 @@ test.describe('Accessibility Audit', () => {
   });
 
   test('should not have redundant or empty links', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     const emptyLinks = await page.locator('a[href]:not(:has-text(""))').all();
@@ -197,7 +197,7 @@ test.describe('Accessibility Audit', () => {
   });
 
   test('should have proper table accessibility', async ({ page }) => {
-    await page.goto('http://localhost:5003/admin/login');
+    await page.goto('http://localhost:5001/admin/login');
     await page.waitForLoadState('networkidle');
     
     // Check if there are any tables
@@ -231,7 +231,7 @@ test.describe('Accessibility Audit', () => {
   });
 
   test('should have proper heading level hierarchy', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     const headings = {
@@ -264,7 +264,7 @@ test.describe('Accessibility Audit', () => {
   });
 
   test('should have proper page title for screen readers', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     const title = await page.title();
     
     console.log(`Page title: "${title}"`);
@@ -274,7 +274,7 @@ test.describe('Accessibility Audit', () => {
     expect(title.length).toBeLessThan(60);
     
     // Navigate to another page and check title changes
-    await page.goto('http://localhost:5003/properties');
+    await page.goto('http://localhost:5001/properties');
     const propertiesTitle = await page.title();
     
     console.log(`Properties page title: "${propertiesTitle}"`);

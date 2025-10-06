@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('SEO and Meta Tags', () => {
   test('landing page should have proper meta tags', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     
     // Check title
     const title = await page.title();
@@ -29,7 +29,7 @@ test.describe('SEO and Meta Tags', () => {
   });
 
   test('should have proper Open Graph tags', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     
     // Check for Open Graph tags
     const ogTitle = await page.locator('meta[property="og:title"]').count();
@@ -45,7 +45,7 @@ test.describe('SEO and Meta Tags', () => {
   });
 
   test('should have proper heading structure', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     // Check for H1 - should have exactly one
@@ -67,7 +67,7 @@ test.describe('SEO and Meta Tags', () => {
   });
 
   test('all images should have alt attributes', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     const images = await page.locator('img').all();
@@ -93,7 +93,7 @@ test.describe('SEO and Meta Tags', () => {
   });
 
   test('should have proper semantic HTML structure', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     // Check for semantic HTML5 elements
@@ -114,7 +114,7 @@ test.describe('SEO and Meta Tags', () => {
   });
 
   test('links should have descriptive text', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     await page.waitForLoadState('networkidle');
     
     const links = await page.locator('a[href]').all();
@@ -141,7 +141,7 @@ test.describe('SEO and Meta Tags', () => {
   });
 
   test('should have proper language attribute', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     
     const htmlLang = await page.locator('html').getAttribute('lang');
     console.log(`HTML lang attribute: ${htmlLang}`);
@@ -157,7 +157,7 @@ test.describe('SEO and Meta Tags', () => {
 
   test('property pages should have structured data', async ({ page }) => {
     // Navigate to properties page first
-    await page.goto('http://localhost:5003/properties');
+    await page.goto('http://localhost:5001/properties');
     await page.waitForLoadState('networkidle');
     
     // Check if there are any property links
@@ -188,7 +188,7 @@ test.describe('SEO and Meta Tags', () => {
   });
 
   test('should have canonical URL', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     
     const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
     console.log(`Canonical URL: ${canonical || 'Not set'}`);
@@ -200,13 +200,13 @@ test.describe('SEO and Meta Tags', () => {
   });
 
   test('should have robots meta tag', async ({ page }) => {
-    await page.goto('http://localhost:5003/');
+    await page.goto('http://localhost:5001/');
     
     const robots = await page.locator('meta[name="robots"]').getAttribute('content');
     console.log(`Robots meta: ${robots || 'Not set (defaults to index, follow)'}`);
     
     // Check admin pages should have noindex
-    await page.goto('http://localhost:5003/admin/login');
+    await page.goto('http://localhost:5001/admin/login');
     const adminRobots = await page.locator('meta[name="robots"]').getAttribute('content');
     console.log(`Admin robots meta: ${adminRobots || 'Not set'}`);
     
