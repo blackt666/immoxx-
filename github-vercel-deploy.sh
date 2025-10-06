@@ -47,21 +47,21 @@ echo "✅ Das ist der einfachste und zuverlässigste Weg!"
 echo "💡 Jeder neue Git-Push deployt automatisch!"
 echo ""
 
-read -p "Möchten Sie den Git-Push jetzt durchführen? (y/n): " choice
-if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-    echo ""
-    echo "📤 Pushing to GitHub..."
-    git add .
-    git commit -m "feat: Ready for Vercel deployment" || true
+echo "📝 GitHub Repository URL eingeben (z.B. https://github.com/username/repo):"
+read -r REPO_URL
+echo "Repository URL gesetzt: $REPO_URL"
+echo ""
+echo "📤 Pushing to GitHub..."
+git add .
+git commit -m "feat: Ready for Vercel deployment" || true
     
-    echo ""
-    echo "⚠️  Sie müssen jetzt:"
-    echo "1. Ein GitHub Repository erstellen"
-    echo "2. Den Remote hinzufügen:"
-    echo "   git remote add origin https://github.com/YOUR_USERNAME/bodensee-immobilien.git"
-    echo "3. Pushen:"
-    echo "   git push -u origin main"
-    echo ""
-fi
+echo ""
+echo "⚠️  Sie müssen jetzt:"
+echo "1. Ein GitHub Repository erstellen"
+echo "2. Den Remote hinzufügen:"
+echo "   git remote add origin https://github.com/YOUR_USERNAME/bodensee-immobilien.git"
+echo "3. Pushen:"
+echo "   git push -u origin main"
+echo ""
 
 echo "🎉 Danach ist Ihre App in 2-3 Minuten live!"

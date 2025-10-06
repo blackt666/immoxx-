@@ -5,19 +5,22 @@
 ### Option 1: Vercel (Empfohlen für MVP)
 
 1. **GitHub Repository vorbereiten:**
+
 ```bash
 git add .
 git commit -m "feat: Ready for deployment"
 git push origin main
 ```
 
-2. **Vercel Setup:**
+1. **Vercel Setup:**
+
 ```bash
 npm install -g vercel
 vercel
 ```
 
-3. **Umgebungsvariablen konfigurieren:**
+1. **Umgebungsvariablen konfigurieren:**
+
 ```env
 DATABASE_URL=file:./database.sqlite
 NODE_ENV=production
