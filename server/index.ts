@@ -77,7 +77,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 if (process.env.NODE_ENV === 'production') {
   // Enable trust proxy for production (required for secure cookies behind reverse proxy)
   app.set('trust proxy', 1);
-  console.log('🔒 Production: Trust proxy enabled for secure cookies');
+  log.info('🔒 Production: Trust proxy enabled for secure cookies');
 } else {
   // Development: No proxy trust needed for local development
   app.set('trust proxy', false);
@@ -126,9 +126,9 @@ if (process.env.NODE_ENV === 'production') {
   const missingVars = requiredProductionVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
-    console.error('❌ SECURITY CRITICAL: Missing required environment variables in production:');
-    console.error(`   Missing: ${missingVars.join(', ')}`);
-    console.error('   Server cannot start without secure configuration in production!');
+    log.error('❌ SECURITY CRITICAL: Missing required environment variables in production:');
+    log.error(`   Missing: ${missingVars.join(', ')}`);
+    log.error('   Server cannot start without secure configuration in production!');
     
     // Set initialization error for health checks
     global.initializationError = new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
@@ -138,20 +138,20 @@ if (process.env.NODE_ENV === 'production') {
   
   // SECURITY: Validate SESSION_SECRET strength
   if (process.env.SESSION_SECRET!.length < 32) {
-    console.error('❌ SECURITY CRITICAL: SESSION_SECRET must be at least 32 characters in production!');
+    log.error('❌ SECURITY CRITICAL: SESSION_SECRET must be at least 32 characters in production!');
     throw new Error('SECURITY: SESSION_SECRET too weak for production environment');
   }
-  
-  console.log('✅ PRODUCTION: All required environment variables validated');
+
+  log.info('✅ PRODUCTION: All required environment variables validated');
 } else {
   // Development environment - warn about missing vars but allow defaults
   if (!process.env.SESSION_SECRET) {
-    console.warn('⚠️ DEVELOPMENT: Using default SESSION_SECRET. Set SESSION_SECRET for security!');
+    log.warn('⚠️ DEVELOPMENT: Using default SESSION_SECRET. Set SESSION_SECRET for security!');
   }
   if (!process.env.DATABASE_URL) {
-    console.warn('⚠️ DEVELOPMENT: DATABASE_URL not set. Session store will fallback to MemoryStore.');
+    log.warn('⚠️ DEVELOPMENT: DATABASE_URL not set. Session store will fallback to MemoryStore.');
   }
-  console.log('✅ DEVELOPMENT: Environment configuration validated');
+  log.info('✅ DEVELOPMENT: Environment configuration validated');
 }
 
 // SECURITY: Production-grade session configuration with PostgreSQL store

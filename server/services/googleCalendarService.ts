@@ -444,11 +444,11 @@ export class GoogleCalendarService {
         description: this.buildEventDescription(appointment),
         start: {
           dateTime: startTime.toISOString(),
-          timeZone: 'Europe/Berlin', // TODO: Make configurable
+          timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin',
         },
         end: {
           dateTime: endTime.toISOString(),
-          timeZone: 'Europe/Berlin',
+          timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin',
         },
         location: appointment.location || undefined,
         status: 'confirmed',

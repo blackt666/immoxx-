@@ -225,7 +225,8 @@ export class TokenMaintenanceService {
       if (connection.provider === 'google') {
         healthStatus = googleCalendarService.getTokenHealthStatus(connection);
       } else if (connection.provider === 'apple') {
-        // TODO: Implement for Apple when available
+        // Apple Calendar token refresh not yet implemented
+        // Apple uses app-specific passwords which don't expire like OAuth tokens
         return 'skipped';
       } else {
         return 'skipped';

@@ -23,6 +23,7 @@ import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { z } from 'zod';
 import { hashPassword, verifyPassword, isWeakPasswordHash } from './lib/crypto.js';
+import { log } from './lib/logger.js';
 
 const uploadDir = path.join(process.cwd(), 'uploads');
 
@@ -322,9 +323,17 @@ const logSecurityEvent = (eventType: string, details: Record<string, unknown> = 
   const logLevel = event.severity === 'critical' || event.severity === 'high' ? 'error' : 'warn';
   console[logLevel](`🔒 SECURITY EVENT [${event.severity.toUpperCase()}] ${eventType}:`, JSON.stringify(event, null, 2));
   
-  // In production, you might want to send this to a security monitoring service
+  // In production, send critical events to monitoring service if configured
   if (process.env.NODE_ENV === 'production' && (event.severity === 'critical' || event.severity === 'high')) {
-    // TODO: Integrate with security monitoring service (e.g., Datadog, New Relic, etc.)
+    // Integrate with security monitoring service via webhook if configured
+    if (process.env.SECURITY_WEBHOOK_URL) {
+      // Send to webhook (e.g., Datadog, New Relic, Slack, etc.)
+      fetch(process.env.SECURITY_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(event)
+      }).catch(err => log.error('Failed to send security event to webhook:', err));
+    }
   }
 };
 
