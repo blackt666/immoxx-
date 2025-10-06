@@ -301,7 +301,7 @@ export class LeadService {
       activity_type: "note",
       subject: "Pipeline Stage Changed",
       description: note || `Moved to "${newStage}"`,
-      created_by: userId,
+      created_by: userId || null,
     });
 
     return lead;
