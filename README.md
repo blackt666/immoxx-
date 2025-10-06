@@ -110,6 +110,37 @@ Die Website ist dann unter `http://localhost:5000` erreichbar.
 
 ## 🔧 Production Deployment
 
+### 🌟 Vercel Deployment (Empfohlen)
+
+**✅ Ready to Deploy!** Die App ist vollständig für Vercel konfiguriert.
+
+**Quick Start (3 Minuten):**
+1. Gehen Sie zu [vercel.com/dashboard](https://vercel.com/dashboard)
+2. Klicken Sie "Add New Project"
+3. Wählen Sie `blackt666/immoxx-final-version`
+4. Setzen Sie Environment Variables (siehe unten)
+5. Klicken Sie "Deploy"
+
+**📖 Vollständige Anleitung:** Siehe [VERCEL-DEPLOYMENT-ANLEITUNG.md](./VERCEL-DEPLOYMENT-ANLEITUNG.md)
+
+**🔧 CLI Alternative:** Siehe [VERCEL-CLI-DEPLOYMENT.md](./VERCEL-CLI-DEPLOYMENT.md)
+
+**Erforderliche Environment Variables:**
+```env
+DATABASE_URL=file:./database.sqlite
+NODE_ENV=production
+AUTH_ENABLED=true
+SESSION_SECRET=your-secure-secret-here
+VERCEL=1
+```
+
+**Features:**
+- ✅ Automatisches Deployment bei Git Push
+- ✅ Preview für Pull Requests
+- ✅ Kostenloses SSL/HTTPS
+- ✅ Global CDN
+- ✅ Serverless Functions
+
 ### Replit Deployment
 
 1. Importiere das Repository in Replit
