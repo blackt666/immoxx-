@@ -24,9 +24,14 @@ import {
   Users,
   TrendingUp,
   Download,
+  BarChart,
+  Upload,
 } from 'lucide-react';
 import { LeadDetailModal } from '../components/crm/LeadDetailModal';
 import { NewLeadModal } from '../components/crm/NewLeadModal';
+import { NotificationBell } from '../components/crm/NotificationBell';
+import { AnalyticsDashboard } from '../components/crm/AnalyticsDashboard';
+import { CSVImport } from '../components/crm/CSVImport';
 import { useToast } from '../hooks/use-toast';
 
 // Types
@@ -80,6 +85,7 @@ export default function CRMDashboard() {
   const [showNewLead, setShowNewLead] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'pipeline' | 'analytics' | 'import'>('pipeline');
 
   // DND Kit sensors
   const sensors = useSensors(
@@ -413,15 +419,68 @@ export default function CRMDashboard() {
             <h1 className="text-2xl font-bold" style={{ color: 'var(--bodensee-deep)' }}>CRM Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <a href="/admin" className="text-sm px-3 py-2 rounded-lg font-semibold flex items-center gap-2" style={{ backgroundColor: 'var(--bodensee-sand)', color: 'var(--bodensee-deep)' }}>
               <TrendingUp className="w-4 h-4" />
               Admin Bereich
             </a>
           </div>
         </div>
+
+        {/* View Tabs */}
+        <div className="flex items-center gap-2 mt-4 border-b border-gray-200">
+          <button
+            onClick={() => setCurrentView('pipeline')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              currentView === 'pipeline'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Inbox className="w-4 h-4 inline mr-2" />
+            Pipeline
+          </button>
+          <button
+            onClick={() => setCurrentView('analytics')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              currentView === 'analytics'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <BarChart className="w-4 h-4 inline mr-2" />
+            Analytics
+          </button>
+          <button
+            onClick={() => setCurrentView('import')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              currentView === 'import'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Upload className="w-4 h-4 inline mr-2" />
+            Import/Export
+          </button>
+        </div>
       </div>
 
       <div className="px-6">
+        {/* Render based on current view */}
+        {currentView === 'analytics' && (
+          <div className="pb-6">
+            <AnalyticsDashboard />
+          </div>
+        )}
+
+        {currentView === 'import' && (
+          <div className="pb-6">
+            <CSVImport />
+          </div>
+        )}
+
+        {currentView === 'pipeline' && (
+          <>
         {/* Subtitle */}
         <div className="mb-6">
           <p className="text-gray-600">Lead Management & Pipeline Übersicht</p>
@@ -591,6 +650,8 @@ export default function CRMDashboard() {
           </div>
         </div>
       </Card>
+          </>
+        )}
       </div>
 
       {/* Modals */}
