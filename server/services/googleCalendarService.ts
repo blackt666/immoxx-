@@ -317,6 +317,7 @@ export class GoogleCalendarService {
    * Refresh access token using refresh token with comprehensive error handling
    */
   async refreshAccessToken(connection: CalendarConnection): Promise<CalendarConnection> {
+    const startTime = Date.now();
     try {
       if (!connection.refreshToken) {
         throw new Error('No refresh token available - user needs to re-authenticate');
@@ -366,7 +367,8 @@ export class GoogleCalendarService {
         .where(eq(schema.calendarConnections.id, connection.id))
         .returning();
 
-      console.log(`Successfully refreshed Google token for connection ${connection.id}, expires at ${tokenExpiresAt}`);
+      const duration = Date.now() - startTime;
+      console.log(`Successfully refreshed Google token for connection ${connection.id}, expires at ${tokenExpiresAt} (Duration: ${duration}ms)`);
       return updatedConnection;
     } catch (error) {
       console.error('Token refresh error:', error);
@@ -522,11 +524,11 @@ export class GoogleCalendarService {
         description: this.buildEventDescription(appointment),
         start: {
           dateTime: startTime.toISOString(),
-          timeZone: 'Europe/Berlin',
+          timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin',
         },
         end: {
           dateTime: endTime.toISOString(),
-          timeZone: 'Europe/Berlin',
+          timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin',
         },
         location: appointment.location || undefined,
         status: appointment.status === 'cancelled' ? 'cancelled' : 'confirmed',

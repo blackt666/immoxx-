@@ -32,11 +32,11 @@ export class CalendarSyncService {
         description: event.description,
         start: {
           dateTime: event.start.toISOString(),
-          timeZone: 'Europe/Berlin'
+          timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin'
         },
         end: {
           dateTime: event.end.toISOString(),
-          timeZone: 'Europe/Berlin'
+          timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin'
         },
         location: event.location,
         attendees: event.attendees?.map(email => ({ email }))
@@ -59,7 +59,7 @@ export class CalendarSyncService {
     const cal = ical({
       prodId: '//Bodensee Immobilien Müller//Calendar//DE',
       name: 'Bodensee Immobilien Termine',
-      timezone: 'Europe/Berlin'
+      timezone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin'
     });
 
     events.forEach(event => {

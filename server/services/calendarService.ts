@@ -53,7 +53,7 @@ export class CalendarService {
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       'X-WR-CALNAME:Bodensee Immobilien CRM',
-      'X-WR-TIMEZONE:Europe/Berlin',
+      `X-WR-TIMEZONE:${process.env.CALENDAR_TIMEZONE || 'Europe/Berlin'}`,
       'X-WR-CALDESC:CRM Events und Aufgaben',
       'BEGIN:VEVENT',
       `UID:${event.id}@bodensee-immobilien.de`,
@@ -107,7 +107,7 @@ export class CalendarService {
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       'X-WR-CALNAME:Bodensee Immobilien CRM',
-      'X-WR-TIMEZONE:Europe/Berlin',
+      `X-WR-TIMEZONE:${process.env.CALENDAR_TIMEZONE || 'Europe/Berlin'}`,
       'X-WR-CALDESC:CRM Events und Aufgaben',
     ];
 

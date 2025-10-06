@@ -144,6 +144,7 @@ export class CalendarSyncService {
     connection: CalendarConnection, 
     options: SyncOptions = {}
   ): Promise<SyncResult> {
+    const startTime = Date.now();
     const result: SyncResult = {
       success: false,
       created: 0,
@@ -244,7 +245,8 @@ export class CalendarSyncService {
         result.errors.join('; ') || undefined
       );
 
-      console.log(`Sync completed for connection ${connection.id}: ${result.success ? 'SUCCESS' : 'ERROR'} (${result.created} created, ${result.updated} updated, ${result.deleted} deleted, ${result.skipped} skipped, ${result.errors.length} errors)`);
+      const duration = Date.now() - startTime;
+      console.log(`Sync completed for connection ${connection.id}: ${result.success ? 'SUCCESS' : 'ERROR'} (${result.created} created, ${result.updated} updated, ${result.deleted} deleted, ${result.skipped} skipped, ${result.errors.length} errors) - Duration: ${duration}ms`);
 
       return result;
     } catch (error) {
@@ -287,6 +289,7 @@ export class CalendarSyncService {
     timeRange: { start: Date; end: Date },
     options: SyncOptions
   ): Promise<SyncResult> {
+    const startTime = Date.now();
     const result: SyncResult = {
       success: true,
       created: 0,
@@ -339,6 +342,9 @@ export class CalendarSyncService {
         }
       }
 
+      const duration = Date.now() - startTime;
+      console.log(`CRM to Calendar sync completed for ${connection.provider}: ${result.created} created, ${result.updated} updated, ${result.deleted} deleted - Duration: ${duration}ms`);
+      
       return result;
     } catch (error) {
       console.error('CRM to Calendar sync failed:', error);
