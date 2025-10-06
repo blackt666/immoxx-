@@ -12,6 +12,8 @@
     "db:push": "drizzle-kit push",
     "test": "node test-quick-validation.js",
     "test:e2e": "npx playwright test",
+    "test:e2e:summary": "node test-e2e-summary.js",
+    "test:e2e:validate": "node validate-e2e-tests.js",
     "test:all": "./run-tests.sh",
     "pm2:start": "./pm2-server.sh start",
     "pm2:stop": "./pm2-server.sh stop",
