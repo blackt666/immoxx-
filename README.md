@@ -2,6 +2,8 @@
 
 Eine moderne, vollständig responsive Immobilienmakler-Website mit AI-Integration und umfassendem Admin-Dashboard für die Bodensee-Region.
 
+> 📊 **[Aktueller Projekt-Status (IST-STAND)](IST-STAND.md)** - Vollständige Übersicht über Features, Build-Status, Tests und Deployment
+
 ## 🚀 Features
 
 ### 🎨 Frontend
@@ -227,7 +229,8 @@ Dieses Projekt steht unter der MIT License - siehe [LICENSE](LICENSE) für Detai
 Bei Fragen oder Problemen:
 
 - GitHub Issues erstellen
-- [Dokumentation](PROJECT-STATUS.md) lesen
+- [Projekt-Status](IST-STAND.md) lesen
+- [Dokumentation](docs/PROJECT-STRUCTURE.md) ansehen
 - Code Review anfordern
 
 ## 🗺️ Roadmap
