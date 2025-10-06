@@ -44,12 +44,22 @@ function getErrorMessage(error: unknown): string {
   return 'Unknown error occurred';
 }
 
+// Timing metrics helper
+interface OperationTiming {
+  operation: string;
+  durationMs: number;
+  timestamp: Date;
+  success: boolean;
+}
+
 export class GoogleCalendarService {
   private oauth2Client: OAuth2Client;
   private calendar: calendar_v3.Calendar;
   private readonly TOKEN_REFRESH_BUFFER_MINUTES = 5; // Refresh tokens 5 minutes before expiry
   private readonly MAX_RETRY_ATTEMPTS = 3;
   private readonly RETRY_DELAY_MS = 1000;
+  private recentOperationTimings: OperationTiming[] = [];
+  private readonly MAX_TIMING_HISTORY = 100;
 
   constructor() {
     this.oauth2Client = new google.auth.OAuth2(
@@ -59,6 +69,81 @@ export class GoogleCalendarService {
     );
 
     this.calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
+  }
+
+  /**
+   * Track operation timing
+   */
+  private trackOperationTiming(operation: string, durationMs: number, success: boolean): void {
+    const timing: OperationTiming = {
+      operation,
+      durationMs,
+      timestamp: new Date(),
+      success,
+    };
+    
+    this.recentOperationTimings.push(timing);
+    
+    // Keep only recent timings
+    if (this.recentOperationTimings.length > this.MAX_TIMING_HISTORY) {
+      this.recentOperationTimings.shift();
+    }
+    
+    console.log(`[GoogleCalendar Timing] ${operation}: ${durationMs}ms (${success ? 'success' : 'failed'})`);
+  }
+
+  /**
+   * Get timing statistics
+   */
+  getTimingStatistics(): {
+    averageMs: number;
+    minMs: number;
+    maxMs: number;
+    totalOperations: number;
+    successRate: number;
+    byOperation: Record<string, { count: number; averageMs: number; successRate: number }>;
+  } {
+    if (this.recentOperationTimings.length === 0) {
+      return {
+        averageMs: 0,
+        minMs: 0,
+        maxMs: 0,
+        totalOperations: 0,
+        successRate: 0,
+        byOperation: {},
+      };
+    }
+
+    const totalMs = this.recentOperationTimings.reduce((sum, t) => sum + t.durationMs, 0);
+    const successCount = this.recentOperationTimings.filter(t => t.success).length;
+    
+    const byOperation: Record<string, { count: number; totalMs: number; successCount: number }> = {};
+    for (const timing of this.recentOperationTimings) {
+      if (!byOperation[timing.operation]) {
+        byOperation[timing.operation] = { count: 0, totalMs: 0, successCount: 0 };
+      }
+      byOperation[timing.operation].count++;
+      byOperation[timing.operation].totalMs += timing.durationMs;
+      if (timing.success) byOperation[timing.operation].successCount++;
+    }
+
+    const byOperationStats: Record<string, { count: number; averageMs: number; successRate: number }> = {};
+    for (const [op, stats] of Object.entries(byOperation)) {
+      byOperationStats[op] = {
+        count: stats.count,
+        averageMs: stats.totalMs / stats.count,
+        successRate: stats.successCount / stats.count,
+      };
+    }
+
+    return {
+      averageMs: totalMs / this.recentOperationTimings.length,
+      minMs: Math.min(...this.recentOperationTimings.map(t => t.durationMs)),
+      maxMs: Math.max(...this.recentOperationTimings.map(t => t.durationMs)),
+      totalOperations: this.recentOperationTimings.length,
+      successRate: successCount / this.recentOperationTimings.length,
+      byOperation: byOperationStats,
+    };
   }
 
   /**
@@ -433,21 +518,25 @@ export class GoogleCalendarService {
    * Create calendar event from CRM appointment with retry logic
    */
   async createEvent(connection: CalendarConnection, appointment: Appointment): Promise<string> {
-    return await this.executeWithRetry(async (updatedConnection) => {
-      const startTime = new Date(appointment.startTime);
-      const endTime = appointment.endTime
-        ? new Date(appointment.endTime)
-        : new Date(startTime.getTime() + (60 * 60 * 1000)); // Default to 1 hour if no end time
+    const operationStart = Date.now();
+    let success = false;
+    
+    try {
+      const result = await this.executeWithRetry(async (updatedConnection) => {
+        const startTime = new Date(appointment.startTime);
+        const endTime = appointment.endTime
+          ? new Date(appointment.endTime)
+          : new Date(startTime.getTime() + (60 * 60 * 1000)); // Default to 1 hour if no end time
 
-      const event: GoogleCalendarEvent = {
-        summary: appointment.title,
-        description: this.buildEventDescription(appointment),
-        start: {
-          dateTime: startTime.toISOString(),
-          timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin',
-        },
-        end: {
-          dateTime: endTime.toISOString(),
+        const event: GoogleCalendarEvent = {
+          summary: appointment.title,
+          description: this.buildEventDescription(appointment),
+          start: {
+            dateTime: startTime.toISOString(),
+            timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin',
+          },
+          end: {
+            dateTime: endTime.toISOString(),
           timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin',
         },
         location: appointment.location || undefined,
@@ -505,126 +594,160 @@ export class GoogleCalendarService {
 
       return googleEventId;
     }, connection, String(appointment.id), 'create');
+    
+    success = true;
+    return result;
+    } catch (error) {
+      throw error;
+    } finally {
+      this.trackOperationTiming('createEvent', Date.now() - operationStart, success);
+    }
   }
 
   /**
    * Update calendar event with retry logic
    */
   async updateEvent(connection: CalendarConnection, appointment: Appointment, googleEventId: string): Promise<void> {
-    await this.executeWithRetry(async (updatedConnection) => {
-      const startTime = new Date(appointment.startTime);
-      const endTime = appointment.endTime
-        ? new Date(appointment.endTime)
-        : new Date(startTime.getTime() + (60 * 60 * 1000));
+    const operationStart = Date.now();
+    let success = false;
+    
+    try {
+      await this.executeWithRetry(async (updatedConnection) => {
+        const startTime = new Date(appointment.startTime);
+        const endTime = appointment.endTime
+          ? new Date(appointment.endTime)
+          : new Date(startTime.getTime() + (60 * 60 * 1000));
 
-      const event: GoogleCalendarEvent = {
-        summary: appointment.title,
-        description: this.buildEventDescription(appointment),
-        start: {
-          dateTime: startTime.toISOString(),
-          timeZone: 'Europe/Berlin',
-        },
-        end: {
-          dateTime: endTime.toISOString(),
-          timeZone: 'Europe/Berlin',
-        },
-        location: appointment.location || undefined,
-        status: appointment.status === 'cancelled' ? 'cancelled' : 'confirmed',
-      };
+        const event: GoogleCalendarEvent = {
+          summary: appointment.title,
+          description: this.buildEventDescription(appointment),
+          start: {
+            dateTime: startTime.toISOString(),
+            timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin',
+          },
+          end: {
+            dateTime: endTime.toISOString(),
+            timeZone: process.env.CALENDAR_TIMEZONE || 'Europe/Berlin',
+          },
+          location: appointment.location || undefined,
+          status: appointment.status === 'cancelled' ? 'cancelled' : 'confirmed',
+        };
 
-      await this.calendar.events.update({
-        calendarId: updatedConnection.providerId!,
-        eventId: googleEventId,
-        requestBody: event,
-      });
+        await this.calendar.events.update({
+          calendarId: updatedConnection.providerId!,
+          eventId: googleEventId,
+          requestBody: event,
+        });
 
-      // Update appointment sync status
-      await db
-        .update(schema.appointments)
-        .set({
-          // calendarSyncStatus: 'synced',
-          // lastCalendarSync: new Date(),
-          // calendarSyncError: null,
-        })
-        .where(eq(schema.appointments.id, appointment.id));
+        // Update appointment sync status
+        await db
+          .update(schema.appointments)
+          .set({
+            // calendarSyncStatus: 'synced',
+            // lastCalendarSync: new Date(),
+            // calendarSyncError: null,
+          })
+          .where(eq(schema.appointments.id, appointment.id));
 
-      // Update calendar event record
-      await db
-        .update(schema.calendarEvents)
-        .set({
-          title: appointment.title,
-          startTime: startTime,
-          endTime: endTime,
-          location: event.location,
-          lastModified: new Date(),
-          syncStatus: 'synced',
-        })
-        .where(eq(schema.calendarEvents.externalId, googleEventId));
+        // Update calendar event record
+        await db
+          .update(schema.calendarEvents)
+          .set({
+            title: appointment.title,
+            startTime: startTime,
+            endTime: endTime,
+            location: event.location,
+            lastModified: new Date(),
+            syncStatus: 'synced',
+          })
+          .where(eq(schema.calendarEvents.externalId, googleEventId));
 
-      // Log successful sync
-      await this.logSyncOperation(
-        updatedConnection.id.toString(),
-        appointment.id.toString(),
-        'update',
-        'crm_to_calendar',
-        'success',
-        `Event updated: ${appointment.title}`,
-        { googleEventId, appointmentTitle: appointment.title }
-      );
-    }, connection, String(appointment.id), 'update');
+        // Log successful sync
+        await this.logSyncOperation(
+          updatedConnection.id.toString(),
+          appointment.id.toString(),
+          'update',
+          'crm_to_calendar',
+          'success',
+          `Event updated: ${appointment.title}`,
+          { googleEventId, appointmentTitle: appointment.title }
+        );
+      }, connection, String(appointment.id), 'update');
+      
+      success = true;
+    } catch (error) {
+      throw error;
+    } finally {
+      this.trackOperationTiming('updateEvent', Date.now() - operationStart, success);
+    }
   }
 
   /**
    * Delete calendar event with retry logic
    */
   async deleteEvent(connection: CalendarConnection, googleEventId: string, appointmentId?: string): Promise<void> {
-    await this.executeWithRetry(async (updatedConnection) => {
-      await this.calendar.events.delete({
-        calendarId: updatedConnection.providerId!,
-        eventId: googleEventId,
-      });
+    const operationStart = Date.now();
+    let success = false;
+    
+    try {
+      await this.executeWithRetry(async (updatedConnection) => {
+        await this.calendar.events.delete({
+          calendarId: updatedConnection.providerId!,
+          eventId: googleEventId,
+        });
 
-      // Update calendar event record
-      await db
-        .update(schema.calendarEvents)
-        .set({
-          syncStatus: 'synced',
-          lastModified: new Date(),
-        })
-        .where(eq(schema.calendarEvents.externalId, googleEventId));
-
-      // Update appointment if provided
-      if (appointmentId) {
+        // Update calendar event record
         await db
-          .update(schema.appointments)
+          .update(schema.calendarEvents)
           .set({
-            // externalId: null,
-            // calendarSyncStatus: 'pending',
-            // lastCalendarSync: new Date(),
+            syncStatus: 'synced',
+            lastModified: new Date(),
           })
-          .where(eq(schema.appointments.id, parseInt(appointmentId, 10)));
-      }
+          .where(eq(schema.calendarEvents.externalId, googleEventId));
 
-      // Log successful sync
-      await this.logSyncOperation(
-        updatedConnection.id.toString(),
-        appointmentId || null,
-        'delete',
-        'crm_to_calendar',
-        'success',
-        `Event deleted: ${googleEventId}`,
-        { googleEventId }
-      );
-    }, connection, appointmentId || null, 'delete');
+        // Update appointment if provided
+        if (appointmentId) {
+          await db
+            .update(schema.appointments)
+            .set({
+              // externalId: null,
+              // calendarSyncStatus: 'pending',
+              // lastCalendarSync: new Date(),
+            })
+            .where(eq(schema.appointments.id, parseInt(appointmentId, 10)));
+        }
+
+        // Log successful sync
+        await this.logSyncOperation(
+          updatedConnection.id.toString(),
+          appointmentId || null,
+          'delete',
+          'crm_to_calendar',
+          'success',
+          `Event deleted: ${googleEventId}`,
+          { googleEventId }
+        );
+      }, connection, appointmentId || null, 'delete');
+      
+      success = true;
+    } catch (error) {
+      throw error;
+    } finally {
+      this.trackOperationTiming('deleteEvent', Date.now() - operationStart, success);
+    }
   }
 
   /**
    * Get events from Google Calendar with retry logic
    */
   async getEvents(connection: CalendarConnection, timeMin?: Date, timeMax?: Date): Promise<calendar_v3.Schema$Event[]> {
-    return await this.executeWithRetry(async (updatedConnection) => {
-      const response = await this.calendar.events.list({
-        calendarId: updatedConnection.providerId!,
+    const operationStart = Date.now();
+    let success = false;
+    
+    try {
+      const result = await this.executeWithRetry(async (updatedConnection) => {
+        const response = await this.calendar.events.list({
+          calendarId: updatedConnection.providerId!,
         timeMin: timeMin?.toISOString(),
         timeMax: timeMax?.toISOString(),
         singleEvents: true,
@@ -634,6 +757,14 @@ export class GoogleCalendarService {
 
       return response.data.items || [];
     }, connection, null, 'fetch');
+    
+    success = true;
+    return result;
+    } catch (error) {
+      throw error;
+    } finally {
+      this.trackOperationTiming('getEvents', Date.now() - operationStart, success);
+    }
   }
 
   /**

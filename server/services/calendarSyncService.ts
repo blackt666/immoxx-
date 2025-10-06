@@ -71,6 +71,13 @@ interface SyncResult {
   deleted: number;
   errors: string[];
   skipped: number;
+  timingMs?: number;
+  timingBreakdown?: {
+    connectionTest?: number;
+    crmToCalendar?: number;
+    calendarToCrm?: number;
+    total: number;
+  };
 }
 
 interface SyncOptions {
@@ -144,6 +151,9 @@ export class CalendarSyncService {
     connection: CalendarConnection, 
     options: SyncOptions = {}
   ): Promise<SyncResult> {
+    const startTime = Date.now();
+    const timingBreakdown: { connectionTest?: number; crmToCalendar?: number; calendarToCrm?: number; total: number } = { total: 0 };
+    
     const result: SyncResult = {
       success: false,
       created: 0,
@@ -163,7 +173,10 @@ export class CalendarSyncService {
       }
 
       // Test connection first
+      const testStartTime = Date.now();
       const isConnected = await this.testConnection(connection);
+      timingBreakdown.connectionTest = Date.now() - testStartTime;
+      
       if (!isConnected) {
         throw new Error('Calendar connection test failed');
       }
@@ -182,7 +195,10 @@ export class CalendarSyncService {
       // Perform sync based on direction with enhanced error handling
       if (direction === 'crm_to_calendar' || direction === 'bidirectional') {
         try {
+          const crmStartTime = Date.now();
           const crmToCalendarResult = await this.syncCRMToCalendar(connection, timeRange, options);
+          timingBreakdown.crmToCalendar = Date.now() - crmStartTime;
+          
           result.created += crmToCalendarResult.created;
           result.updated += crmToCalendarResult.updated;
           result.deleted += crmToCalendarResult.deleted;
@@ -201,7 +217,10 @@ export class CalendarSyncService {
 
       if (direction === 'calendar_to_crm' || direction === 'bidirectional') {
         try {
+          const calendarStartTime = Date.now();
           const calendarToCRMResult = await this.syncCalendarToCRM(connection, timeRange, options);
+          timingBreakdown.calendarToCrm = Date.now() - calendarStartTime;
+          
           result.created += calendarToCRMResult.created;
           result.updated += calendarToCRMResult.updated;
           result.deleted += calendarToCRMResult.deleted;
@@ -219,6 +238,11 @@ export class CalendarSyncService {
         error.toLowerCase().includes('authentication') ||
         error.toLowerCase().includes('re-authentication')
       );
+
+      // Calculate total timing
+      timingBreakdown.total = Date.now() - startTime;
+      result.timingMs = timingBreakdown.total;
+      result.timingBreakdown = timingBreakdown;
 
       // Update connection sync status
       let finalStatus = result.success ? 'connected' : 'error';
@@ -244,7 +268,7 @@ export class CalendarSyncService {
         result.errors.join('; ') || undefined
       );
 
-      console.log(`Sync completed for connection ${connection.id}: ${result.success ? 'SUCCESS' : 'ERROR'} (${result.created} created, ${result.updated} updated, ${result.deleted} deleted, ${result.skipped} skipped, ${result.errors.length} errors)`);
+      console.log(`Sync completed for connection ${connection.id}: ${result.success ? 'SUCCESS' : 'ERROR'} (${result.created} created, ${result.updated} updated, ${result.deleted} deleted, ${result.skipped} skipped, ${result.errors.length} errors) - Timing: ${timingBreakdown.total}ms (test: ${timingBreakdown.connectionTest || 0}ms, crmToCalendar: ${timingBreakdown.crmToCalendar || 0}ms, calendarToCrm: ${timingBreakdown.calendarToCrm || 0}ms)`);
 
       return result;
     } catch (error) {
