@@ -8,12 +8,17 @@
 # Complete build
 npm run build
 
+# Build validation
+npm run test:build
+
 # Nur Client
 vite build
 
 # Nur Server
 npm run check
 ```
+
+**Note:** The build script automatically installs client dependencies before building. This ensures that all required packages are available during the build process, especially important for CI/CD environments like Vercel.
 
 ### Server starten
 

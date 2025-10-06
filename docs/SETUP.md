@@ -61,8 +61,20 @@ npm start            # Production mode
 
 ```bash
 npm test             # Quick validation tests
+npm run test:build   # Build validation test
 npm run test:e2e     # E2E tests mit Playwright
 npm run test:all     # Alle Tests (via run-tests.sh)
+```
+
+### Build Testing
+
+The build validation test checks:
+- ✅ Build script exists and has correct content
+- ✅ Client dependencies are installed before building
+- ✅ Build outputs are created correctly
+
+```bash
+npm run test:build
 ```
 
 ## Monitoring
