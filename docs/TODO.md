@@ -14,6 +14,24 @@
   - Statistical analysis (average, min, max, success rate)
   - Per-operation performance tracking
 - [x] Enhanced logging with timing information
+- [x] API endpoint for timing statistics (`GET /api/calendar/stats/timing`)
+- [x] Comprehensive documentation ([TIMING-METRICS.md](TIMING-METRICS.md))
+
+### Security Monitoring Integration ✅
+- [x] Centralized SecurityMonitoringService
+- [x] Event tracking with severity levels (low, medium, high, critical)
+- [x] Support for multiple integrations:
+  - Webhook notifications
+  - Sentry (placeholder for future implementation)
+  - Datadog (placeholder for future implementation)
+- [x] Security event buffer (last 100 events) with statistics
+- [x] API endpoints:
+  - `GET /api/security/stats` - Security statistics
+  - `GET /api/security/events` - Recent security events
+  - `POST /api/security/test-event` - Test event logging (dev only)
+- [x] Integration with existing authentication security logging
+- [x] Configurable severity filtering
+- [x] Comprehensive documentation ([SECURITY-MONITORING.md](SECURITY-MONITORING.md))
 
 ### Configuration Improvements ✅
 - [x] Timezone already configurable via CALENDAR_TIMEZONE environment variable
@@ -53,18 +71,18 @@
   - Note: Apple uses app-specific passwords which don't expire like OAuth tokens
   - Service currently disabled/stubbed in `server/services/appleCalendarService.ts`
 
-### Monitoring & Observability
-- [ ] Integrate with security monitoring service
-  - Location: `server/routes.ts:354`
-  - Options: Datadog, New Relic, Sentry
-  - Required for production security event tracking
-
 ## Medium Priority
 
 ### Calendar Features
 - [ ] Implement Google Calendar push notifications
   - Location: `server/routes/calendar.ts:804`
   - Webhook handling for real-time updates
+- [ ] Complete Sentry integration
+  - Install @sentry/node package
+  - Implement in `server/services/securityMonitoringService.ts:sendToSentry`
+- [ ] Complete Datadog integration
+  - Install @datadog/datadog-api-client package
+  - Implement in `server/services/securityMonitoringService.ts:sendToDatadog`
 
 ## Low Priority
 
