@@ -128,10 +128,19 @@ export function LeadDetailModal({ lead, open, onClose, onEdit, onDelete }: LeadD
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button size="sm" style={{ backgroundColor: 'var(--bodensee-water)', color: 'white' }}>
+              <Button 
+                size="sm" 
+                style={{ backgroundColor: 'var(--bodensee-water)', color: 'white' }}
+                onClick={() => window.location.href = `tel:${lead.phone}`}
+                disabled={!lead.phone}
+              >
                 <span className="mr-2">📞</span> Anrufen
               </Button>
-              <Button size="sm" variant="outline">
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => window.location.href = `mailto:${lead.email}?subject=Ihre%20Immobilienanfrage%20-%20${lead.first_name}%20${lead.last_name}`}
+              >
                 <span className="mr-2">✉️</span> E-Mail senden
               </Button>
               <Button size="sm" variant="outline">

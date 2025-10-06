@@ -140,7 +140,7 @@ export default function CRMDashboard() {
       const res = await fetch(`/api/crm/v2/leads/${leadId}/move-stage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pipeline_stage: newStage }),
+        body: JSON.stringify({ stage: newStage }),
       });
       if (!res.ok) throw new Error('Failed to move lead');
       return res.json();
@@ -317,13 +317,44 @@ export default function CRMDashboard() {
           Score: {lead.score}
         </div>
         <div className="flex gap-1">
-          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => e.stopPropagation()}>
-            <Phone className="w-3 h-3" />
-          </Button>
-          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => e.stopPropagation()}>
+          {lead.phone && (
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="h-7 px-2" 
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = `tel:${lead.phone}`;
+              }}
+              title="Anrufen"
+            >
+              <Phone className="w-3 h-3" />
+            </Button>
+          )}
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-7 px-2" 
+            onClick={(e) => {
+              e.stopPropagation();
+              window.location.href = `mailto:${lead.email}?subject=Ihre%20Immobilienanfrage`;
+            }}
+            title="E-Mail senden"
+          >
             <Mail className="w-3 h-3" />
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => e.stopPropagation()}>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-7 px-2" 
+            onClick={(e) => {
+              e.stopPropagation();
+              // Open lead detail to schedule appointment
+              setSelectedLead(lead);
+              setShowLeadDetail(true);
+            }}
+            title="Termin planen"
+          >
             <Calendar className="w-3 h-3" />
           </Button>
         </div>
