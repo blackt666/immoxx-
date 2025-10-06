@@ -2,6 +2,20 @@
 
 Eine moderne, vollständig responsive Immobilienmakler-Website mit AI-Integration und umfassendem Admin-Dashboard für die Bodensee-Region.
 
+## 🌐 Deployment Status
+
+**🟡 NOCH NICHT GEHOSTET** - Die App ist vollständig entwickelt und deployment-ready, aber noch nicht auf einem öffentlichen Server deployed.
+
+➡️ **Siehe `DEPLOYMENT-STATUS.md` für Details zum Deployment**  
+➡️ **Siehe `VERCEL-DEPLOYMENT.md` für Schritt-für-Schritt Anleitung**
+
+| Status | Beschreibung |
+|--------|-------------|
+| **Code** | ✅ Vollständig & Funktionsfähig |
+| **Tests** | ✅ E2E Tests bestehen |
+| **Build** | ✅ Production-ready |
+| **Live Hosting** | ❌ Noch nicht deployed |
+
 ## 🚀 Features
 
 ### 🎨 Frontend
