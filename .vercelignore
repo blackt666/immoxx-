@@ -1,0 +1,66 @@
+# Development files
+node_modules
+.env.local
+.env.development
+.env.test
+
+# Test files
+tests
+playwright-report
+test-results
+*.spec.ts
+*.spec.js
+*.test.ts
+*.test.js
+
+# Build artifacts not needed
+.cache
+.snapshots
+
+# Documentation
+docs
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+
+# Logs
+logs
+*.log
+
+# Git
+.git
+.gitignore
+
+# Scripts for local development
+scripts/*.sh
+pm2-server.sh
+quick-deploy.sh
+setup.sh
+test-*.js
+run-tests.sh
+
+# Database (SQLite will be created on Vercel)
+database.sqlite*
+
+# Source TypeScript (we deploy compiled JS)
+server/**/*.ts
+!server/**/*.d.ts
+client/src
+
+# Config files not needed in production
+.prettierignore
+.replit
+eslint.config.js
+playwright.config.ts
+playwright-validation.config.ts
+tsconfig.json
+tsconfig.prod.json
+vite.config.ts
+tailwind.config.ts
+postcss.config.cjs
+drizzle.config.ts
+components.json
+ecosystem.config.json
