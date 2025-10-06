@@ -12,20 +12,27 @@ console.log('🚀 ImmoXX Production Build');
 console.log('===========================\n');
 
 try {
-  // 1. Clean previous builds
-  console.log('🧹 Cleaning previous builds...');
+  // 1. Install client dependencies
+  console.log('📦 Installing client dependencies...');
+  if (fs.existsSync('client/package.json')) {
+    execSync('cd client && npm ci --prefer-offline --no-audit', { stdio: 'inherit' });
+    console.log('✅ Client dependencies installed');
+  }
+
+  // 2. Clean previous builds
+  console.log('\n🧹 Cleaning previous builds...');
   if (fs.existsSync('dist')) {
     execSync('rm -rf dist', { stdio: 'inherit' });
   }
   fs.mkdirSync('dist', { recursive: true });
   fs.mkdirSync('dist/public', { recursive: true });
 
-  // 2. Build client with Vite
+  // 3. Build client with Vite
   console.log('\n📦 Building client with Vite...');
   execSync('vite build', { stdio: 'inherit' });
   console.log('✅ Client build completed');
 
-  // 3. Build server with TypeScript (with tsx fallback)
+  // 4. Build server with TypeScript (with tsx fallback)
   console.log('\n🔧 Building server...');
   let serverCompiled = false;
 
@@ -38,7 +45,7 @@ try {
     console.log('📝 Production will use tsx runtime');
   }
 
-  // 4. Verify build outputs
+  // 5. Verify build outputs
   const checks = {
     'Client': fs.existsSync('dist/public/index.html'),
     'Server Source': fs.existsSync('server/index.ts'),
