@@ -3,6 +3,7 @@ import { db } from "../db.js";
 import * as schema from "@shared/schema";
 import { sql } from "drizzle-orm";
 import { PerformanceMonitor } from "../lib/performance-monitor.js";
+import { log } from "../lib/logger.js";
 
 const router = Router();
 
@@ -20,7 +21,7 @@ router.get("/health", async (req, res) => {
 
     res.json(healthData);
   } catch (error) {
-    console.error("Health check failed:", error);
+    log.error("Health check failed:", error);
     res.status(500).json({
       status: "unhealthy",
       error: error instanceof Error ? error.message : "Unknown error",
@@ -47,7 +48,7 @@ router.get("/diagnostic", async (req, res) => {
 
     res.json(diagnostics);
   } catch (error) {
-    console.error("Diagnostic check failed:", error);
+    log.error("Diagnostic check failed:", error);
     res.status(500).json({
       status: "error",
       error: error instanceof Error ? error.message : "Unknown error",
@@ -91,7 +92,7 @@ router.get("/system-check", async (req, res) => {
 // Systematic error scanning endpoint (removed - file deleted)
 router.get("/systematic-scan", async (req, res) => {
   try {
-    console.log('🔍 Systematic scan endpoint called...');
+    log.info('🔍 Systematic scan endpoint called...');
 
     // Simple system health check instead
     const systemCheck = {
@@ -114,10 +115,10 @@ router.get("/systematic-scan", async (req, res) => {
       recommendations: ['System is healthy. No issues detected.']
     };
 
-    console.log('📊 System check completed');
+    log.info('📊 System check completed');
     res.json(systemCheck);
   } catch (error) {
-    console.error("System check failed:", error);
+    log.error("System check failed:", error);
     res.status(500).json({
       status: "error",
       timestamp: new Date().toISOString(),
@@ -175,7 +176,7 @@ router.get("/performance", async (req, res) => {
     const report = PerformanceMonitor.getReport();
     res.json(report);
   } catch (error) {
-    console.error("Performance report failed:", error);
+    log.error("Performance report failed:", error);
     res.status(500).json({
       error: error instanceof Error ? error.message : "Unknown error"
     });
@@ -187,7 +188,7 @@ router.get("/performance/realtime", async (req, res) => {
     const metrics = PerformanceMonitor.getRealtimeMetrics();
     res.json(metrics);
   } catch (error) {
-    console.error("Realtime metrics failed:", error);
+    log.error("Realtime metrics failed:", error);
     res.status(500).json({
       error: error instanceof Error ? error.message : "Unknown error"
     });
@@ -199,7 +200,7 @@ router.post("/performance/clear", async (req, res) => {
     PerformanceMonitor.clearMetrics();
     res.json({ message: "Performance metrics cleared" });
   } catch (error) {
-    console.error("Clear metrics failed:", error);
+    log.error("Clear metrics failed:", error);
     res.status(500).json({
       error: error instanceof Error ? error.message : "Unknown error"
     });

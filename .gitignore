@@ -14,10 +14,12 @@ logs/
 playwright-report/
 test-results.json
 
-# Environment files
+# Environment files - NEVER commit these!
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
 .env.production.local
 

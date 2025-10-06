@@ -94,7 +94,7 @@ Die Contact Section hatte bereits funktionierende tel: Links implementiert.
 **Datei:** `.env`
 
 ```env
-DEEPSEEK_API_KEY=sk-d75a933ba7084c4fb139c208107855bf
+DEEPSEEK_API_KEY=REDACTED_API_KEY
 DEEPSEEK_MODEL=deepseek-chat
 DEEPSEEK_MAX_TOKENS=2000
 DEEPSEEK_TEMPERATURE=0.7

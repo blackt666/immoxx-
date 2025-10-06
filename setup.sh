@@ -10,7 +10,8 @@ LOG_FILE="$PROJECT_ROOT/setup.log"
 
 # Logging-Funktion
 log() {
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$timestamp] $1" | tee -a "$LOG_FILE"
 }
 
@@ -36,7 +37,8 @@ check_requirements() {
         error "Node.js is not installed"
     fi
 
-    local node_version=$(node --version | sed 's/v//')
+    local node_version
+    node_version=$(node --version | sed 's/v//')
     log "Node.js version: $node_version"
 
     # npm Version prüfen
@@ -44,7 +46,8 @@ check_requirements() {
         error "npm is not installed"
     fi
 
-    local npm_version=$(npm --version)
+    local npm_version
+    npm_version=$(npm --version)
     log "npm version: $npm_version"
 
     # PM2 prüfen/installieren

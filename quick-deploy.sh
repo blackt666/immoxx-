@@ -20,7 +20,7 @@ echo "3) Render (Balanced option)"
 echo "4) Exit"
 echo ""
 
-read -p "Enter your choice (1-4): " choice
+read -r -p "Enter your choice (1-4): " choice
 
 case $choice in
     1)

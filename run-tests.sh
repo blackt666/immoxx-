@@ -10,7 +10,8 @@ LOG_FILE="$PROJECT_ROOT/test-run.log"
 
 # Logging
 log() {
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$timestamp] $1" | tee -a "$LOG_FILE"
 }
 
@@ -94,7 +95,8 @@ run_unit_tests() {
     cd "$PROJECT_ROOT"
 
     # Finde alle .test.js Dateien
-    local test_files=$(find tests -name "*.test.js" 2>/dev/null || true)
+    local test_files
+    test_files=$(find tests -name "*.test.js" 2>/dev/null || true)
 
     if [ -n "$test_files" ]; then
         if npm run test:unit 2>/dev/null; then
@@ -114,10 +116,12 @@ run_performance_tests() {
     cd "$PROJECT_ROOT"
 
     # Einfacher Performance-Test
-    local start_time=$(date +%s%3N)
+    local start_time
+    start_time=$(date +%s%3N)
 
     if curl -s -w "%{time_total}" -o /dev/null http://localhost:5001/api/health > /dev/null 2>&1; then
-        local end_time=$(date +%s%3N)
+        local end_time
+    end_time=$(date +%s%3N)
         local response_time=$((end_time - start_time))
         log "📊 Health endpoint response time: ${response_time}ms"
 
@@ -143,7 +147,8 @@ stop_server() {
 generate_report() {
     log "📋 Generating test report..."
 
-    local report_file="$PROJECT_ROOT/test-report-$(date +%Y%m%d-%H%M%S).md"
+    local report_file
+    report_file="$PROJECT_ROOT/test-report-$(date +%Y%m%d-%H%M%S).md"
 
     cat > "$report_file" << EOF
 # ImmoXX Test Report

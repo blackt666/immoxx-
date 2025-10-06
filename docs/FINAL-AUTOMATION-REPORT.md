@@ -48,7 +48,7 @@ This report documents the **complete automated implementation** of all requested
 
 #### Configuration Completed
 - Created `.env` file with API credentials
-- API Key: `sk-d75a933ba7084c4fb139c208107855bf`
+- API Key: `REDACTED_API_KEY`
 - Model: `deepseek-chat`
 - Max Tokens: 2000
 - Temperature: 0.7

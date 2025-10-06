@@ -82,7 +82,7 @@ Zeile 71-75 (E-Mail):
 **[.env](.env)** - NEU ERSTELLT
 ```env
 # DeepSeek AI (Recommended) - CONFIGURED
-DEEPSEEK_API_KEY=sk-d75a933ba7084c4fb139c208107855bf
+DEEPSEEK_API_KEY=REDACTED_API_KEY
 DEEPSEEK_MODEL=deepseek-chat
 DEEPSEEK_MAX_TOKENS=2000
 DEEPSEEK_TEMPERATURE=0.7
@@ -429,7 +429,7 @@ Methode 3: Batch Upload (Ordner)
 
 **Fix:**
 - `.env` File erstellt
-- API Key konfiguriert: `sk-d75a933ba7084c4fb139c208107855bf`
+- API Key konfiguriert: `REDACTED_API_KEY`
 - Alle DeepSeek-Parameter gesetzt
 
 **Impact:** HIGH - AI-Funktionalität jetzt verfügbar
