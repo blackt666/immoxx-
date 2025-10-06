@@ -97,6 +97,9 @@ export class CalendarService {
   generateICSMultiple(events: CalendarEvent[]): string {
     const now = new Date();
     const formatDate = (date: Date): string => {
+      if (isNaN(date.getTime())) {
+        date = new Date(); // Fallback to now if invalid
+      }
       return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     };
 
@@ -112,8 +115,22 @@ export class CalendarService {
     ];
 
     for (const event of events) {
-      const startDate = new Date(event.startDate);
-      const endDate = event.endDate ? new Date(event.endDate) : new Date(startDate.getTime() + 60 * 60 * 1000);
+      // Parse and validate start date
+      let startDate = new Date(event.startDate);
+      if (isNaN(startDate.getTime())) {
+        startDate = new Date(); // Fallback to now
+      }
+
+      // Parse and validate end date
+      let endDate: Date;
+      if (event.endDate) {
+        endDate = new Date(event.endDate);
+        if (isNaN(endDate.getTime())) {
+          endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Default 1 hour
+        }
+      } else {
+        endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Default 1 hour
+      }
 
       icsContent.push(
         'BEGIN:VEVENT',
