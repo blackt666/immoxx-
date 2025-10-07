@@ -1,0 +1,94 @@
+{
+  "name": "ImmoXX Full-Stack Development",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-typescript-next",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "eamodio.gitlens",
+        "github.copilot",
+        "github.copilot-chat",
+        "prisma.prisma",
+        "styled-components.vscode-styled-components",
+        "ms-playwright.playwright",
+        "redhat.vscode-yaml",
+        "streetsidesoftware.code-spell-checker",
+        "usernamehw.errorlens"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true,
+        "files.associations": {
+          "*.css": "tailwindcss"
+        },
+        "tailwindCSS.experimental.classRegex": [
+          ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+          ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+        ]
+      }
+    }
+  },
+  
+  "forwardPorts": [5000, 5173, 5003],
+  "portsAttributes": {
+    "5000": {
+      "label": "Backend API Server",
+      "onAutoForward": "notify",
+      "protocol": "http"
+    },
+    "5173": {
+      "label": "Vite Dev Server (Frontend)",
+      "onAutoForward": "openBrowser",
+      "protocol": "http"
+    },
+    "5003": {
+      "label": "E2E Test Server",
+      "onAutoForward": "silent",
+      "protocol": "http"
+    }
+  },
+  
+  "postCreateCommand": "npm install && npm run db:push",
+  
+  "postStartCommand": "echo '🚀 Starting ImmoXX Development Server...' && npm run dev",
+  
+  "postAttachCommand": "echo '✅ ImmoXX Codespace Ready! Visit http://localhost:5173 to see the app.'",
+  
+  "remoteUser": "node",
+  
+  "containerEnv": {
+    "NODE_ENV": "development"
+  },
+  
+  "mounts": [
+    "source=${localWorkspaceFolder}/.env,target=/workspaces/immoxx-final-version/.env,type=bind,consistency=cached"
+  ],
+  
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true
+    }
+  }
+}
