@@ -1,0 +1,53 @@
+{
+  "name": "Bodensee Immobilien",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-playwright.playwright"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        }
+      }
+    }
+  },
+
+  "forwardPorts": [5000, 5001],
+  "portsAttributes": {
+    "5000": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "notify"
+    },
+    "5001": {
+      "label": "Express Backend",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "postCreateCommand": "npm install",
+  
+  "postStartCommand": "echo '🚀 Bodensee Immobilien is ready!' && echo '📝 Run: npm run dev to start the development server' && echo '🌐 The app will be available on port 5000'",
+
+  "remoteEnv": {
+    "NODE_ENV": "development",
+    "PORT": "5001",
+    "HOST": "0.0.0.0",
+    "DATABASE_URL": "file:./database.sqlite",
+    "AUTH_ENABLED": "false"
+  }
+}

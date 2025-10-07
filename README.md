@@ -110,11 +110,28 @@ Die Website ist dann unter `http://localhost:5000` erreichbar.
 
 ## 🔧 Production Deployment
 
+### GitHub Codespaces (Schnellster Start)
+
+**Direkt im Browser entwickeln und testen:**
+
+1. Öffnen Sie das Repository auf GitHub
+2. Klicken Sie auf **Code** → **Codespaces** → **Create codespace on main**
+3. Warten Sie 1-2 Minuten auf automatisches Setup
+4. Führen Sie `npm run dev` aus
+
+**Oder direkt öffnen:** [Open in Codespaces](https://codespaces.new/blackt666/immoxx-final-version)
+
+📖 **Vollständige Anleitung:** [CODESPACES-DEPLOYMENT.md](./CODESPACES-DEPLOYMENT.md)
+
 ### Replit Deployment
 
 1. Importiere das Repository in Replit
 2. Setze die Umgebungsvariablen in Replit Secrets
 3. Klicke auf "Run"
+
+### Vercel / Railway / Netlify
+
+Siehe [DEPLOYMENT-OPTIONS.md](./DEPLOYMENT-OPTIONS.md) für alle Deployment-Optionen.
 
 ### Andere Hosting-Provider
 
