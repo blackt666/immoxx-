@@ -11,6 +11,7 @@ import Landing from './pages/Landing';
 import AdminLogin from './pages/admin-login';
 import AdminDashboard from './pages/admin-dashboard';
 import CRMDashboard from './pages/crm-dashboard';
+import { SocialMediaDashboard } from './modules/social-media/components/SocialMediaDashboard';
 import Properties from './pages/properties';
 import PropertyDetails from './pages/property-details';
 import AIValuation from './pages/ai-valuation';
@@ -87,6 +88,11 @@ export default function App() {
                 {/* Old Admin Routes (kept for compatibility) */}
                 <Route path="/admin/login" component={AdminLogin} />
                 <Route path="/admin/crm/dashboard" component={CRMDashboard} />
+                <Route path="/admin/social-media">
+                  <ProtectedRoute>
+                    <SocialMediaDashboard />
+                  </ProtectedRoute>
+                </Route>
                 <Route path="/admin/crm/customers">
                   <ProtectedRoute>
                     <AdminDashboard />

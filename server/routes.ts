@@ -14,6 +14,7 @@ import calendarRouter from './routes/calendar.js';
 import importRouter from './routes/import.js';
 import templatesRouter from './routes/templates.js';
 import deepseekRouter from './routes/deepseek.js';
+import socialMediaRouter from './routes/social-media.js';
 import multer from 'multer';
 import { imageUpload, importUpload, backupUpload } from './lib/multer-config.js';
 import { PropertyValuationData, generateSEOKeywords } from "./openaiService.js";
@@ -629,6 +630,9 @@ export async function registerRoutes(app: Express) {
 
   // DeepSeek AI routes - secured with requireAuth
   app.use('/api/deepseek', requireAuth, deepseekRouter);
+
+  // Social Media routes - secured with requireAuth
+  app.use('/api/social-media', requireAuth, socialMediaRouter);
 
   // Enhanced health endpoint with ready state - matches main health endpoint structure
   app.get("/api/health", (req, res) => {
