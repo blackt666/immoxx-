@@ -27,7 +27,7 @@ test-results.json
 database.sqlite*
 
 # IDE
-.vscode/
+# .vscode/ - Keep for Codespaces and team consistency
 .idea/
 *.swp
 *.swo
