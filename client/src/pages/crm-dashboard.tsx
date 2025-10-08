@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -74,7 +74,6 @@ export default function CRMDashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
-  const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showLeadDetail, setShowLeadDetail] = useState(false);
   const [showNewLead, setShowNewLead] = useState(false);
@@ -267,7 +266,7 @@ export default function CRMDashboard() {
       <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
         <Card
           className="p-4 mb-3 hover:shadow-md transition-shadow cursor-move"
-          onClick={(e) => {
+          onClick={() => {
             // Only open detail if not dragging
             if (!isDragging) {
               setSelectedLead(lead);

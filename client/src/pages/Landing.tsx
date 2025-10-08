@@ -5,7 +5,6 @@ import StatsSection from "@/components/landing/stats-section";
 import ServicesSection from "@/components/landing/services-section";
 import PropertiesShowcase from "@/components/landing/properties-showcase";
 import PropertyCalculator from "@/components/landing/property-calculator";
-import GalleryShowcase from "@/components/landing/gallery-showcase";
 import AboutSection from "@/components/landing/about-section";
 import TestimonialsSection from "@/components/landing/testimonials-section";
 import ContactSection from "@/components/landing/contact-section";

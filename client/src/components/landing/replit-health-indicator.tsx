@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface HealthData {

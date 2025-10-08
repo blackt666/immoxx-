@@ -109,7 +109,7 @@ export default function PropertyCalculator() {
         documentsNeeded: [],
         agreeToDocuments: false,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Fehler",
         description:

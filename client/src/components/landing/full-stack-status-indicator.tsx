@@ -28,11 +28,10 @@ interface ApiStatus {
 export function FullStackStatusIndicator() {
   const [isVisible, setIsVisible] = useState(false);
   const [systemHealth, setSystemHealth] = useState<'healthy' | 'degraded' | 'error'>('healthy');
-  const [status, setStatus] = useState<FullStackStatus | null>(null); // Keep original status state
-  const [loading, setLoading] = useState(true); // Keep original loading state
-  const [error, setError] = useState<string | null>(null); // Keep original error state
-  const [showDetails, setShowDetails] = useState(false); // Keep original showDetails state
-  const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null); // Keep original apiStatus state
+  const [status, setStatus] = useState<FullStackStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Safe Replit detection with null checks
   const isReplit = typeof window !== 'undefined' &&
@@ -96,37 +95,10 @@ export function FullStackStatusIndicator() {
     }
   };
 
-  // Keep original checkApiStatus function, but it might be redundant if using useQuery for /api/health
-  const checkApiStatus = async () => {
-    try {
-      const startTime = Date.now();
-      const response = await fetch("/api/health", {
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok)
-        throw new Error(`API responded with ${response.status}`);
-
-      const data = await response.json();
-      const responseTime = Date.now() - startTime;
-
-      setApiStatus({
-        status: "operational",
-        message: `API funktioniert (${responseTime}ms)`,
-        responseTime,
-      });
-    } catch (error) {
-      console.error("Status check error:", error);
-      setApiStatus({
-        status: "error",
-        message: "API nicht erreichbar",
-        responseTime: null,
-      });
-    }
-  };
+  // Fetch status on mount
+  useEffect(() => {
+    fetchStatus();
+  }, []);
 
   // Modify the main useEffect to correctly integrate the new logic
   useEffect(() => {

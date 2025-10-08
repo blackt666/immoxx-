@@ -8,7 +8,6 @@ import {
   MapPin,
   Home,
   Bath,
-  Bed,
   Calendar,
   Square,
   Camera,

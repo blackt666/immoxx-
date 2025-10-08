@@ -11,10 +11,7 @@ import {
   Maximize,
   Share2,
   RotateCcw,
-  Volume2,
-  VolumeX,
   Compass,
-  Settings,
 } from "lucide-react";
 
 declare global {
@@ -55,7 +52,6 @@ export default function RealVirtualTour({
   const [activeTab, setActiveTab] = useState("tour");
   const [showHotspots, setShowHotspots] = useState(true);
   const [showCompass, setShowCompass] = useState(true);
-  const [audioEnabled, setAudioEnabled] = useState(false);
   const [tourProgress, setTourProgress] = useState(0);
 
   useEffect(() => {

@@ -1,7 +1,4 @@
 import { Router } from "express";
-import { db } from "../db.js";
-import * as schema from "@shared/schema";
-import { sql } from "drizzle-orm";
 import { PerformanceMonitor } from "../lib/performance-monitor.js";
 import { log } from "../lib/logger.js";
 

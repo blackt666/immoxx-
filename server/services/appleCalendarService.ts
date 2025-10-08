@@ -1,9 +1,5 @@
 // import * as dav from 'dav';
 // import * as ical from 'node-ical';
-import { v4 as uuidv4 } from 'uuid';
-import { db } from '../db.js';
-import * as schema from '@shared/schema';
-import { eq, and } from 'drizzle-orm';
 import type { CalendarConnection, Appointment, InsertCalendarEvent, InsertCalendarSyncLog } from '@shared/schema';
 import { encrypt, decrypt } from '../lib/crypto.js';
 
