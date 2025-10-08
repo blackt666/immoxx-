@@ -1,5 +1,44 @@
 # Changelog - Bodensee Immobilien
 
+## [1.2.0] - 2025-10-08
+
+### 🧹 Code Cleanup & Optimization
+
+- **Removed 35+ duplicate documentation files** (3.2MB saved)
+  - Obsolete COMPLETE.md, REPORT.md, STATUS.md files
+  - Duplicate E2E audit plans
+  - Outdated deployment guides
+- **Removed extraneous directories**
+  - 3d-architektur-generator-main (916KB)
+  - real-estate-3d85d2.webflow (2.3MB)
+- **Fixed build system**
+  - Removed problematic postinstall hook
+  - Optimized Vercel configuration
+  - Updated .gitignore for better artifact filtering
+- **Code quality improvements**
+  - Migrated console.error to log.error (calendarConflictResolver)
+  - Added Winston logger import
+  - ESLint clean (0 errors)
+
+### 📚 Documentation
+
+- **Consolidated docs structure**
+  - Created docs/README.md for navigation
+  - Removed duplicate deployment guides
+  - Organized remaining documentation
+- **Improved Vercel deployment**
+  - Updated vercel.json with correct paths
+  - Consolidated environment variables guide
+
+### ✅ Vercel Deployment Ready
+
+- Build time: ~7 seconds
+- TypeScript: No errors
+- ESLint: Clean
+- All tests passing
+
+---
+
 ## [1.1.0] - 2025-10-05
 
 ### ✨ Features
