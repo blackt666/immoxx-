@@ -60,7 +60,7 @@ router.post('/', async (req, res) => {
       dimensions: JSON.stringify(planData.dimensions || {}),
       status: planData.status || 'draft',
       isPublic: Boolean(planData.isPublic),
-      createdBy: req.session?.user?.id || 1,
+      createdBy: req.session?.user?.id || null,
     }).returning();
     
     log.info('Floor plan created:', { id: newPlan.id, name: newPlan.name });

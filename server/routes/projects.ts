@@ -55,7 +55,7 @@ router.post('/', async (req, res) => {
       actualBudget: 0,
       currency: projectData.currency || 'EUR',
       progress: 0,
-      createdBy: req.session?.user?.id || 1,
+      createdBy: req.session?.user?.id || null,
     }).returning();
     
     log.info('Project created:', { id: newProject.id, name: newProject.name });
@@ -138,7 +138,7 @@ router.post('/:id/tasks', async (req, res) => {
       dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
       assignedTo: taskData.assignedTo ? parseInt(taskData.assignedTo) : null,
       progress: 0,
-      createdBy: req.session?.user?.id || 1,
+      createdBy: req.session?.user?.id || null,
     }).returning();
     
     log.info('Task created:', { id: newTask.id, projectId });
@@ -200,7 +200,7 @@ router.post('/:id/comments', async (req, res) => {
       taskId: taskId ? parseInt(taskId) : null,
       content,
       commentType: commentType || 'comment',
-      createdBy: req.session?.user?.id || 1,
+      createdBy: req.session?.user?.id || null,
     }).returning();
     
     res.status(201).json(newComment);
