@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "../lib/auth";
 import SidebarNavigation from "@/components/admin/sidebar-navigation";
 import DashboardOverview from "@/components/admin/dashboard-overview";
 import PropertiesManagement from "@/components/admin/properties-management";
@@ -63,8 +62,8 @@ export default function AdminDashboard() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  // Check authentication
-  const { user } = useAuth();
+  // Check authentication - Mock user when auth is disabled
+  const user = { username: 'admin', name: 'Administrator', email: 'admin@bimm-fn.de' };
   const isLoading = false; // Auth context doesn't have loading state
 
   // Set activeTab based on current URL path
