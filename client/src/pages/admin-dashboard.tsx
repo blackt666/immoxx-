@@ -45,10 +45,15 @@ const NavItem = ({ icon: Icon, label, isActive, onClick }: NavItemProps) => (
     onClick={onClick}
     className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 ${
       isActive
-        ? 'text-[var(--bodensee-deep)] font-medium'
-        : 'text-[var(--bodensee-sand)] hover:text-white hover:bg-white/10'
+        ? 'font-medium'
+        : 'hover:bg-white/10'
     }`}
-    style={isActive ? {backgroundColor: 'var(--bodensee-sand)'} : {}}
+    style={isActive ? {
+      backgroundColor: 'var(--wf-accent-primary)',
+      color: 'var(--wf-text-on-accent)'
+    } : {
+      color: 'rgba(255, 255, 255, 0.8)'
+    }}
   >
     <Icon className="w-5 h-5 mr-3" />
     {label}
@@ -180,7 +185,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-[#F5F5F5] to-[#E8F4F8]">
+    <div className="flex h-screen" style={{ backgroundColor: 'var(--wf-neutral-secondary)' }}>
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div
@@ -196,14 +201,16 @@ export default function AdminDashboard() {
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:block
       `}>
-        <div className="w-64 text-white p-6 min-h-screen sidebar-gradient">
+        <div className="w-64 p-6 min-h-screen" style={{ backgroundColor: 'var(--wf-neutral-inverse)', color: 'var(--wf-neutral-primary)' }}>
               <div className="flex items-center mb-8">
-                <div className="w-10 h-10 rounded-lg bg-bodensee-bermuda-sand text-bodensee-ruskin-blue flex items-center justify-center mr-3">
-                  <span className="font-bold">AM</span>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mr-3" style={{ backgroundColor: 'var(--wf-accent-primary)', color: 'var(--wf-text-on-accent)' }}>
+                  <svg width="24" height="24" viewBox="0 0 33 33" fill="currentColor">
+                    <path d="M28,0H5C2.24,0,0,2.24,0,5v23c0,2.76,2.24,5,5,5h23c2.76,0,5-2.24,5-5V5c0-2.76-2.24-5-5-5ZM29,17c-6.63,0-12,5.37-12,12h-1c0-6.63-5.37-12-12-12v-1c6.63,0,12-5.37,12-12h1c0,6.63,5.37,12,12,12v1Z" />
+                  </svg>
                 </div>
                 <div>
-                  <h2 className="font-bold text-lg">MÜLLER</h2>
-                  <p className="text-bodensee-bermuda-sand text-sm opacity-90">Admin Dashboard</p>
+                  <h2 className="font-manrope font-bold text-lg">MÜLLER</h2>
+                  <p className="text-sm opacity-80">Admin Dashboard</p>
                 </div>
               </div>
           <nav className="space-y-2">
@@ -213,11 +220,12 @@ export default function AdminDashboard() {
                 <NavItem icon={MessageSquare} label="Anfragen" isActive={activeTab === 'inquiries'} onClick={() => setActiveTab('inquiries')} />
                 
                 {/* CRM Section */}
-                <div className="pt-2 mt-2 border-t border-white/20">
-                  <p className="text-xs text-[#D9CDBF] uppercase tracking-wider mb-2 px-4">CRM System</p>
+                <div className="pt-2 mt-2" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                  <p className="text-xs uppercase tracking-wider mb-2 px-4" style={{ color: 'var(--wf-accent-primary)' }}>CRM System</p>
                   <a
                     href="/admin/crm/dashboard"
-                    className="w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 text-[var(--bodensee-sand)] hover:text-white hover:bg-white/10 mb-1"
+                    className="w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 hover:bg-white/10 mb-1"
+                    style={{ color: 'rgba(255, 255, 255, 0.8)' }}
                   >
                     <span className="mr-3">📊</span>
                     CRM Dashboard
@@ -237,19 +245,20 @@ export default function AdminDashboard() {
                 <NavItem icon={FileText} label="Performance Monitoring" isActive={activeTab === 'performance'} onClick={() => setActiveTab('performance')} />
               </nav>
 
-              <div className="mt-8 pt-8 border-t border-white/20">
+              <div className="mt-8 pt-8" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
                 <div className="flex items-center mb-4">
-                  <div className="w-8 h-8 rounded-full bg-bodensee-sublime text-white flex items-center justify-center mr-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3" style={{ backgroundColor: 'var(--wf-accent-primary)', color: 'var(--wf-text-on-accent)' }}>
                     <span className="text-sm font-medium">A</span>
                   </div>
                   <div>
-                    <p className="text-white text-sm font-medium">Administrator</p>
-                    <p className="text-bodensee-mushroom text-xs">Administrator</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--wf-neutral-primary)' }}>Administrator</p>
+                    <p className="text-xs opacity-70">Administrator</p>
                   </div>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center px-4 py-2 text-bodensee-bermuda-sand hover:bg-white/10 hover:text-white rounded-lg transition-colors"
+                  className="w-full flex items-center px-4 py-2 rounded-lg transition-colors hover:bg-white/10"
+                  style={{ color: 'rgba(255, 255, 255, 0.8)' }}
                 >
                   <LogOut className="w-4 h-4 mr-3" />
                   Abmelden
@@ -260,13 +269,14 @@ export default function AdminDashboard() {
 
       <div className="flex-1 overflow-hidden lg:ml-0">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 px-4 lg:px-6 py-4">
+        <header className="shadow-sm px-4 lg:px-6 py-4" style={{ backgroundColor: 'var(--wf-neutral-primary)', borderBottom: '1px solid rgba(0, 0, 31, 0.1)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                className="lg:hidden p-2 rounded-md hover:bg-webflow-neutral-secondary transition-colors"
+                style={{ color: 'var(--wf-neutral-inverse)' }}
                 data-testid="button-mobile-menu"
               >
                 {isMobileMenuOpen ? (
@@ -276,15 +286,16 @@ export default function AdminDashboard() {
                 )}
               </button>
               <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">{currentTab.title}</h1>
-                <p className="text-gray-600 text-xs lg:text-sm">{currentTab.subtitle}</p>
+                <h1 className="text-xl lg:text-2xl font-manrope font-bold" style={{ color: 'var(--wf-neutral-inverse)' }}>{currentTab.title}</h1>
+                <p className="text-xs lg:text-sm" style={{ color: 'rgba(0, 0, 31, 0.6)' }}>{currentTab.subtitle}</p>
               </div>
             </div>
             <div className="flex items-center space-x-2 lg:space-x-4">
               {/* Search Button */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-webflow-neutral-secondary transition-colors"
+                style={{ color: 'var(--wf-neutral-inverse)' }}
                 title="Dashboard durchsuchen (Ctrl+K)"
                 data-testid="dashboard-search-button"
               >
@@ -294,7 +305,8 @@ export default function AdminDashboard() {
               {/* Help Button */}
               <button
                 onClick={() => setIsHelpOpen(true)}
-                className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-webflow-neutral-secondary transition-colors"
+                style={{ color: 'var(--wf-neutral-inverse)' }}
                 title="Hilfe & Dokumentation"
                 data-testid="dashboard-help-button"
               >
@@ -304,7 +316,7 @@ export default function AdminDashboard() {
               {/* Notifications */}
               <NotificationBell />
               
-              <div className="hidden sm:block text-xs lg:text-sm text-gray-500">
+              <div className="hidden sm:block text-xs lg:text-sm" style={{ color: 'rgba(0, 0, 31, 0.5)' }}>
                 Letzter Login: {new Date().toLocaleString('de-DE')}
               </div>
             </div>
