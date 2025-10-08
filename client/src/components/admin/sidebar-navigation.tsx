@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Bell,
   X,
+  ClipboardList,
 } from "lucide-react";
 import {
   Dialog,
@@ -86,6 +87,12 @@ export default function SidebarNavigation({ onLogout }: SidebarNavigationProps) 
           label: "Dashboard",
           path: "/admin/dashboard",
           description: "Übersicht und Statistiken",
+        },
+        {
+          icon: ClipboardList,
+          label: "Projekt Management",
+          path: "/admin/project-management",
+          description: "OptimAizeFlow - Projekte & Aufgaben",
         },
       ]
     },

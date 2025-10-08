@@ -102,6 +102,11 @@ export default function App() {
                     <AdminDashboard />
                   </ProtectedRoute>
                 </Route>
+                <Route path="/admin/project-management">
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                </Route>
                 <Route path="/admin">
                   <ProtectedRoute>
                     <AdminDashboard />

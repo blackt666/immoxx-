@@ -18,6 +18,7 @@ import CRMCustomers from "../pages/admin/crm-customers";
 import CRMAppointments from "../pages/admin/crm-appointments";
 import CRMLeads from "../pages/admin/crm-leads";
 import CalendarIntegration from "../components/CalendarIntegration";
+import ProjectManagement from "@/components/admin/project-management";
 import { useState } from "react";
 import { Menu, X, LayoutDashboard, Building, Image, MessageSquare, Send, Edit, Link, Settings, Activity, LogOut, FileText, Target, Search, HelpCircle, Users, Calendar, TrendingUp, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -74,6 +75,8 @@ export default function AdminDashboard() {
       setActiveTab('crm-leads');
     } else if (location.includes('/admin/crm/appointments')) {
       setActiveTab('crm-appointments');
+    } else if (location.includes('/admin/project-management')) {
+      setActiveTab('project-management');
     } else if (location === '/admin') {
       setActiveTab('dashboard');
     }
@@ -128,7 +131,8 @@ export default function AdminDashboard() {
     "crm-customers": { title: "CRM - Kunden", subtitle: "Verwalten Sie Ihre Kundenbeziehungen" },
     "crm-appointments": { title: "CRM - Termine", subtitle: "Verwalten Sie Ihre Termine und Besichtigungen" },
     "crm-leads": { title: "CRM - Leads", subtitle: "Verwalten Sie Ihre Sales Pipeline" },
-    "calendar-integration": { title: "Kalender-Integration", subtitle: "Verwalten Sie Ihre Kalender-Verbindungen" }
+    "calendar-integration": { title: "Kalender-Integration", subtitle: "Verwalten Sie Ihre Kalender-Verbindungen" },
+    "project-management": { title: "Projekt Management", subtitle: "OptimAizeFlow - Projekte und Aufgaben verwalten" }
   };
 
   const currentTab = tabTitles[activeTab as keyof typeof tabTitles] || tabTitles.dashboard;
@@ -167,6 +171,8 @@ export default function AdminDashboard() {
         return <CRMLeads />;
       case "calendar-integration":
         return <CalendarIntegration />;
+      case "project-management":
+        return <ProjectManagement />;
       default:
         return <DashboardOverview onTabChange={setActiveTab} />;
     }
