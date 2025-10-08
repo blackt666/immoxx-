@@ -19,7 +19,7 @@
 **Framework Preset:** Other  
 **Root Directory:** `.` (Standard)  
 **Build Command:** `npm run build`  
-**Output Directory:** `dist`  
+**Output Directory:** `dist/public`  
 **Install Command:** `npm install`
 
 ### 4. 🔧 Environment Variables setzen

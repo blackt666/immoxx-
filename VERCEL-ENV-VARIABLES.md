@@ -37,7 +37,7 @@ Kopieren Sie diese Werte direkt in das Vercel Dashboard:
 ### Build Settings:
 - **Framework Preset:** `Other`
 - **Build Command:** `npm run build`
-- **Output Directory:** `dist`
+- **Output Directory:** `dist/public`
 - **Install Command:** `npm install`
 - **Root Directory:** `./` (leer lassen)
 
