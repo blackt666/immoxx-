@@ -7,12 +7,14 @@ npm-debug.log*
 dist/
 build/
 .cache/
+client/dist/
 
 # Test outputs
 test-results/
 logs/
 playwright-report/
 test-results.json
+.snapshots/
 
 # Environment files - NEVER commit these!
 .env
@@ -25,12 +27,14 @@ test-results.json
 
 # Database
 database.sqlite*
+database/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+.replit
 
 # OS
 .DS_Store
@@ -41,14 +45,15 @@ uploads/*
 !uploads/.gitkeep
 
 # Playwright
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-# Build & Output
-dist/
-logs/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# PM2
+server.pid
+.local/
+
+# Temporary files
+*.tmp
 .rebase-tmp-untracked/
-uploads/.DS_Store
-.env
-database.sqlite*

@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import type { Appointment, InsertCalendarSyncLog } from '@shared/schema';
 import { appointments, calendarEvents, calendarSyncLogs } from '@shared/schema';
 import { isAfter, differenceInMinutes } from 'date-fns';
+import { log } from '../lib/logger.js';
 
 // Type for external calendar event data (Google/Apple)
 export interface CalendarEventData {
@@ -85,7 +86,7 @@ export class CalendarConflictResolver {
 
       return conflicts;
     } catch (error) {
-      console.error('Error detecting conflicts:', error);
+      log.error('Error detecting conflicts:', error);
       return [];
     }
   }
@@ -123,7 +124,7 @@ export class CalendarConflictResolver {
           await this.logConflictResolution(conflict, strategy, 'pending', resolvedBy);
         }
       } catch (error) {
-        console.error(`Error resolving conflict ${conflict.id}:`, error);
+        log.error(`Error resolving conflict ${conflict.id}:`, error);
         pending.push(conflict);
       }
     }
@@ -152,7 +153,7 @@ export class CalendarConflictResolver {
           return { success: false, appliedStrategy: 'unknown' };
       }
     } catch (error) {
-      console.error('Error applying resolution:', error);
+      log.error('Error applying resolution:', error);
       return { success: false, appliedStrategy: 'error' };
     }
   }
@@ -292,7 +293,7 @@ export class CalendarConflictResolver {
 
       return null;
     } catch (error) {
-      console.error('Error detecting duplicate events:', error);
+      log.error('Error detecting duplicate events:', error);
       return null;
     }
   }
@@ -399,7 +400,7 @@ export class CalendarConflictResolver {
           return { success: false, appliedStrategy: 'unsupported_strategy' };
       }
     } catch (error) {
-      console.error('Error resolving timing conflict:', error);
+      log.error('Error resolving timing conflict:', error);
       return { success: false, appliedStrategy: 'error' };
     }
   }
@@ -471,7 +472,7 @@ export class CalendarConflictResolver {
           return { success: false, appliedStrategy: 'unsupported_strategy' };
       }
     } catch (error) {
-      console.error('Error resolving data mismatch:', error);
+      log.error('Error resolving data mismatch:', error);
       return { success: false, appliedStrategy: 'error' };
     }
   }
@@ -520,7 +521,7 @@ export class CalendarConflictResolver {
 
       await db.insert(calendarSyncLogs).values(logData);
     } catch (error) {
-      console.error('Failed to log conflict resolution:', error);
+      log.error('Failed to log conflict resolution:', error);
     }
   }
 
@@ -639,7 +640,7 @@ export class CalendarConflictResolver {
 
       return stats;
     } catch (error) {
-      console.error('Error getting conflict stats:', error);
+      log.error('Error getting conflict stats:', error);
       return null;
     }
   }
