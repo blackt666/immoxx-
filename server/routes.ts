@@ -14,6 +14,8 @@ import calendarRouter from './routes/calendar.js';
 import importRouter from './routes/import.js';
 import templatesRouter from './routes/templates.js';
 import deepseekRouter from './routes/deepseek.js';
+import projectsRouter from './routes/projects.js';
+import floorplansRouter from './routes/floorplans.js';
 import multer from 'multer';
 import { imageUpload, importUpload, backupUpload } from './lib/multer-config.js';
 import { PropertyValuationData, generateSEOKeywords } from "./openaiService.js";
@@ -629,6 +631,10 @@ export async function registerRoutes(app: Express) {
 
   // DeepSeek AI routes - secured with requireAuth
   app.use('/api/deepseek', requireAuth, deepseekRouter);
+
+  // Projects and Floor Plans routes - secured with requireAuth
+  app.use('/api/projects', requireAuth, projectsRouter);
+  app.use('/api/floorplans', requireAuth, floorplansRouter);
 
   // Enhanced health endpoint with ready state - matches main health endpoint structure
   app.get("/api/health", (req, res) => {

@@ -18,8 +18,10 @@ import CRMCustomers from "../pages/admin/crm-customers";
 import CRMAppointments from "../pages/admin/crm-appointments";
 import CRMLeads from "../pages/admin/crm-leads";
 import CalendarIntegration from "../components/CalendarIntegration";
+import FloorPlanner3D from "@/components/admin/floor-planner-3d";
+import ProjectManagement from "@/components/admin/project-management";
 import { useState } from "react";
-import { Menu, X, LayoutDashboard, Building, Image, MessageSquare, Send, Edit, Link, Settings, Activity, LogOut, FileText, Target, Search, HelpCircle, Users, Calendar, TrendingUp, RefreshCw } from "lucide-react";
+import { Menu, X, LayoutDashboard, Building, Image, MessageSquare, Send, Edit, Link, Settings, Activity, LogOut, FileText, Target, Search, HelpCircle, Users, Calendar, TrendingUp, RefreshCw, Layers, FolderKanban } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardSearch from "@/components/admin/dashboard-search";
 import DashboardHelp from "@/components/admin/dashboard-help";
@@ -128,7 +130,9 @@ export default function AdminDashboard() {
     "crm-customers": { title: "CRM - Kunden", subtitle: "Verwalten Sie Ihre Kundenbeziehungen" },
     "crm-appointments": { title: "CRM - Termine", subtitle: "Verwalten Sie Ihre Termine und Besichtigungen" },
     "crm-leads": { title: "CRM - Leads", subtitle: "Verwalten Sie Ihre Sales Pipeline" },
-    "calendar-integration": { title: "Kalender-Integration", subtitle: "Verwalten Sie Ihre Kalender-Verbindungen" }
+    "calendar-integration": { title: "Kalender-Integration", subtitle: "Verwalten Sie Ihre Kalender-Verbindungen" },
+    "floor-planner": { title: "3D Grundriss-Planer", subtitle: "Erstellen und visualisieren Sie Grundrisse in 3D" },
+    "project-management": { title: "Projektmanagement", subtitle: "Verwalten Sie Ihre Bau- und Entwicklungsprojekte" }
   };
 
   const currentTab = tabTitles[activeTab as keyof typeof tabTitles] || tabTitles.dashboard;
@@ -167,6 +171,10 @@ export default function AdminDashboard() {
         return <CRMLeads />;
       case "calendar-integration":
         return <CalendarIntegration />;
+      case "floor-planner":
+        return <FloorPlanner3D />;
+      case "project-management":
+        return <ProjectManagement />;
       default:
         return <DashboardOverview onTabChange={setActiveTab} />;
     }
@@ -211,6 +219,13 @@ export default function AdminDashboard() {
                 <NavItem icon={Building} label="Immobilien" isActive={activeTab === 'properties'} onClick={() => setActiveTab('properties')} />
                 <NavItem icon={Image} label="Galerie" isActive={activeTab === 'gallery'} onClick={() => setActiveTab('gallery')} />
                 <NavItem icon={MessageSquare} label="Anfragen" isActive={activeTab === 'inquiries'} onClick={() => setActiveTab('inquiries')} />
+                
+                {/* New Features Section */}
+                <div className="pt-2 mt-2 border-t border-white/20">
+                  <p className="text-xs text-[#D9CDBF] uppercase tracking-wider mb-2 px-4">Neue Features</p>
+                  <NavItem icon={Layers} label="3D Grundriss-Planer" isActive={activeTab === 'floor-planner'} onClick={() => setActiveTab('floor-planner')} />
+                  <NavItem icon={FolderKanban} label="Projektmanagement" isActive={activeTab === 'project-management'} onClick={() => setActiveTab('project-management')} />
+                </div>
                 
                 {/* CRM Section */}
                 <div className="pt-2 mt-2 border-t border-white/20">

@@ -357,6 +357,127 @@ export const newsletters = sqliteTable('newsletters', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
 });
 
+// 3D Floor Plans
+export const floorPlans = sqliteTable('floor_plans', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  propertyId: integer('property_id').references(() => properties.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  floorLevel: text('floor_level'), // 'ground', 'first', 'second', etc.
+  
+  // 3D Data (stored as JSON)
+  planData: text('plan_data'), // JSON string containing walls, rooms, furniture, etc.
+  thumbnail: text('thumbnail'), // URL to thumbnail image
+  
+  // Measurements
+  totalArea: real('total_area'), // square meters
+  dimensions: text('dimensions'), // JSON string {width, length, height}
+  
+  // Status and visibility
+  status: text('status').notNull().default('draft'), // 'draft', 'published'
+  isPublic: integer('is_public', { mode: 'boolean' }).default(false),
+  
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
+// Projects (for construction/renovation project management)
+export const projects = sqliteTable('projects', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  propertyId: integer('property_id').references(() => properties.id, { onDelete: 'set null' }),
+  
+  // Basic information
+  name: text('name').notNull(),
+  description: text('description'),
+  projectType: text('project_type').notNull(), // 'construction', 'renovation', 'development'
+  
+  // Timeline
+  startDate: integer('start_date', { mode: 'timestamp' }),
+  endDate: integer('end_date', { mode: 'timestamp' }),
+  actualStartDate: integer('actual_start_date', { mode: 'timestamp' }),
+  actualEndDate: integer('actual_end_date', { mode: 'timestamp' }),
+  
+  // Budget
+  estimatedBudget: real('estimated_budget'),
+  actualBudget: real('actual_budget'),
+  currency: text('currency').default('EUR'),
+  
+  // Status
+  status: text('status').notNull().default('planning'), // 'planning', 'in_progress', 'on_hold', 'completed', 'cancelled'
+  progress: integer('progress').default(0), // 0-100%
+  priority: text('priority').default('medium'), // 'low', 'medium', 'high', 'urgent'
+  
+  // Team
+  projectManager: integer('project_manager').references(() => users.id),
+  assignedTo: integer('assigned_to').references(() => users.id),
+  
+  // Metadata
+  tags: text('tags'), // JSON array
+  notes: text('notes'),
+  documents: text('documents'), // JSON array of document references
+  
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
+// Project Tasks
+export const projectTasks = sqliteTable('project_tasks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  projectId: integer('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  parentTaskId: integer('parent_task_id'), // For subtasks
+  
+  // Task details
+  title: text('title').notNull(),
+  description: text('description'),
+  taskType: text('task_type'), // 'milestone', 'task', 'subtask'
+  
+  // Timeline
+  startDate: integer('start_date', { mode: 'timestamp' }),
+  dueDate: integer('due_date', { mode: 'timestamp' }),
+  completedDate: integer('completed_date', { mode: 'timestamp' }),
+  
+  // Status and priority
+  status: text('status').notNull().default('todo'), // 'todo', 'in_progress', 'review', 'completed', 'blocked'
+  priority: text('priority').default('medium'),
+  progress: integer('progress').default(0), // 0-100%
+  
+  // Assignment
+  assignedTo: integer('assigned_to').references(() => users.id),
+  
+  // Dependencies
+  dependencies: text('dependencies'), // JSON array of task IDs this task depends on
+  blockedBy: text('blocked_by'),
+  
+  // Resources
+  estimatedHours: real('estimated_hours'),
+  actualHours: real('actual_hours'),
+  cost: real('cost'),
+  
+  // Metadata
+  tags: text('tags'),
+  attachments: text('attachments'), // JSON array
+  
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
+// Project Comments/Notes
+export const projectComments = sqliteTable('project_comments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  projectId: integer('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  taskId: integer('task_id').references(() => projectTasks.id, { onDelete: 'cascade' }),
+  
+  content: text('content').notNull(),
+  commentType: text('comment_type').default('comment'), // 'comment', 'note', 'update'
+  
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});
+
 // Zod schemas for validation
 import { z } from 'zod';
 
@@ -432,3 +553,13 @@ export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
 export type InsertCalendarSyncLog = typeof calendarSyncLogs.$inferInsert;
 export type InsertCustomerInteraction = typeof customerInteractions.$inferInsert;
 export type InsertCustomerSegment = typeof customerSegments.$inferInsert;
+
+// New types for 3D Floor Plans and Projects
+export type FloorPlan = typeof floorPlans.$inferSelect;
+export type InsertFloorPlan = typeof floorPlans.$inferInsert;
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = typeof projects.$inferInsert;
+export type ProjectTask = typeof projectTasks.$inferSelect;
+export type InsertProjectTask = typeof projectTasks.$inferInsert;
+export type ProjectComment = typeof projectComments.$inferSelect;
+export type InsertProjectComment = typeof projectComments.$inferInsert;
