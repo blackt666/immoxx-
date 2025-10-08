@@ -60,56 +60,65 @@ export default function StatsSection() {
       icon: Award,
       value: `${counters.years}+`,
       label: "Jahre Erfahrung",
-      color: "text-[var(--bodensee-water)]",
-      bg: "bg-[var(--bodensee-water)]/10",
     },
     {
       icon: TrendingUp,
       value: `${counters.properties}+`,
       label: "Verkaufte Immobilien",
-      color: "text-[var(--bodensee-stone)]",
-      bg: "bg-[var(--bodensee-stone)]/10",
     },
     {
       icon: Users,
       value: `${counters.satisfaction}%`,
       label: "Kundenzufriedenheit",
-      color: "text-[var(--bodensee-sand)]",
-      bg: "bg-[var(--bodensee-sand)]/10",
     },
     {
       icon: Clock,
       value: `${counters.response}h`,
       label: "Antwortzeit",
-      color: "text-[var(--bodensee-shore)]",
-      bg: "bg-[var(--bodensee-shore)]/10",
     },
   ];
 
   return (
-    <section className="py-20 bg-gray-50" ref={sectionRef}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+    <section className="wf-section is-secondary" ref={sectionRef}>
+      <div className="wf-container">
+        {/* Logo Showcase - Webflow Style */}
+        <div className="mb-16">
+          <div className="wf-eyebrow text-center mb-8">Vertrauensvolle Partnerschaften</div>
+          <div className="wf-logo-showcase flex-wrap">
+            {/* Placeholder logos - in Webflow these are partner logos */}
+            {['LOGO 1', 'LOGO 2', 'LOGO 3', 'LOGO 4', 'LOGO 5', 'LOGO 6'].map((logo, i) => (
+              <div
+                key={i}
+                className="wf-logo flex items-center justify-center font-bold"
+                style={{ color: 'rgba(0, 0, 31, 0.3)' }}
+              >
+                {logo}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Stats Grid - Webflow Style */}
+        <div className="wf-grid-4">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <div
                 key={stat.label}
-                className={`text-center transform transition-all duration-700 delay-${index * 100} ${
+                className={`text-center transform transition-all duration-700 ${
                   isVisible
                     ? "translate-y-0 opacity-100"
                     : "translate-y-10 opacity-0"
                 }`}
+                style={{ transitionDelay: `${index * 100}ms` }}
               >
-                <div
-                  className={`inline-flex items-center justify-center w-16 h-16 ${stat.bg} rounded-2xl mb-4`}
-                >
-                  <Icon className={`w-8 h-8 ${stat.color}`} />
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ backgroundColor: 'var(--wf-accent-primary)', color: 'var(--wf-text-on-accent)' }}>
+                  <Icon className="w-8 h-8" />
                 </div>
-                <div className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                <div className="text-4xl font-bold mb-2" style={{ color: 'var(--wf-accent-primary)' }}>
                   {stat.value}
                 </div>
-                <div className="text-gray-600 font-medium">{stat.label}</div>
+                <div className="text-base font-medium" style={{ color: 'rgba(0, 0, 31, 0.6)' }}>{stat.label}</div>
               </div>
             );
           })}
