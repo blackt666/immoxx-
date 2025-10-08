@@ -70,8 +70,8 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-r from-[var(--ruskin-blue)] via-[var(--arctic-blue)] to-blue-600">
-      {/* Background Video/Image */}
+    <section className="wf-section relative min-h-screen flex items-center justify-center overflow-hidden" style={{ backgroundColor: 'var(--wf-neutral-primary)' }}>
+      {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         {heroContent.backgroundImage?.endsWith('.mp4') ? (
           <video
@@ -80,189 +80,105 @@ export default function HeroSection() {
             muted
             loop
             playsInline
-            className="w-full h-full object-cover opacity-30"
+            className="w-full h-full object-cover opacity-20"
             onLoadedData={handleVideoLoad}
-            onCanPlay={() => console.log("Video can play")}
           >
             <source src={heroContent.backgroundImage} type="video/mp4" />
           </video>
         ) : (
           <div
-            className="w-full h-full bg-cover bg-center opacity-30 hero-background"
-            data-bg-url={heroContent.backgroundImage || '/uploads/hero-bodensee-sunset.jpg'}
+            className="w-full h-full bg-cover bg-center opacity-20"
+            style={{ backgroundImage: `url('${heroContent.backgroundImage || '/uploads/hero-bodensee-sunset.jpg'}')` }}
           />
         )}
-        <div className="absolute inset-0 z-10 hero-gradient" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/50 to-white" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-bodensee-bermuda-sand">
-        <div className="space-y-8 animate-fade-in">
-          {/* Main Title */}
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight mt-16 sm:mt-8 text-bodensee-bermuda-sand">
-            <span className="block mb-2 text-bodensee-bermuda-sand">{heroContent.title}</span>
-            <span className="block text-2xl sm:text-3xl lg:text-4xl font-normal mt-4 text-bodensee-bermuda-sand">
-              Manfred Müller
-            </span>
+      {/* Content - Webflow Style */}
+      <div className="wf-container relative z-10 text-center">
+        <div className="max-w-6xl mx-auto space-y-6 animate-fade-in py-20">
+          {/* Location Badge */}
+          <div className="inline-flex items-center space-x-2 bg-webflow-neutral-secondary rounded-full px-6 py-3 text-sm font-medium mb-4">
+            <MapPin className="w-4 h-4 text-webflow-accent-primary" />
+            <span style={{ color: 'var(--wf-neutral-inverse)' }}>Friedrichshafen • Bodensee-Region</span>
+          </div>
+
+          {/* Main Heading - Webflow Typography */}
+          <h1 className="font-manrope font-bold text-webflow-neutral-inverse" style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)', lineHeight: '1.1', marginBottom: '1.5rem' }}>
+            {heroContent.title}
           </h1>
 
-          {/* Subtitle */}
-          <p className="text-lg sm:text-xl lg:text-2xl max-w-4xl mx-auto leading-relaxed text-bodensee-bermuda-sand">
+          {/* Subheading */}
+          <p className="wf-subheading max-w-3xl mx-auto mb-8" style={{ fontSize: '1.25rem', lineHeight: '1.6', color: 'rgba(0, 0, 31, 0.7)' }}>
             {heroContent.subtitle}
           </p>
 
-          {/* Company Badge */}
-          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3 text-sm font-medium text-white">
-            <MapPin className="w-4 h-4 text-bodensee-sublime" />
-            <span className="text-bodensee-sublime">Friedrichshafen • Bodensee-Region</span>
-          </div>
-
-          {/* Stats Row - Mobile Responsive */}
-          <div className="grid grid-cols-2 gap-6 sm:flex sm:justify-center sm:items-center sm:gap-0 sm:space-x-8 lg:space-x-12 py-6">
-            <div className="text-center">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-bodensee-bermuda-sand">3k+</div>
-              <div className="text-xs sm:text-sm text-bodensee-bermuda-sand">
-                {language === 'de' ? (
-                  <>Zufriedene<br className="sm:hidden" /> Kunden</>
-                ) : (
-                  <>Satisfied<br className="sm:hidden" /> Customers</>
-                )}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-bodensee-bermuda-sand">80+</div>
-              <div className="text-xs sm:text-sm text-bodensee-bermuda-sand">
-                {language === 'de' ? (
-                  <>Verkaufte<br className="sm:hidden" /> Immobilien</>
-                ) : (
-                  <>Properties<br className="sm:hidden" /> Sold</>
-                )}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-bodensee-bermuda-sand">98%</div>
-              <div className="text-xs sm:text-sm text-bodensee-bermuda-sand">{t('stats.success')}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-bodensee-bermuda-sand">10+</div>
-              <div className="text-xs sm:text-sm text-bodensee-bermuda-sand">
-                {language === 'de' ? (
-                  <>Jahre<br className="sm:hidden" /> Erfahrung</>
-                ) : (
-                  <>Years<br className="sm:hidden" /> Experience</>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* AI Services Highlight */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-4xl mx-auto border border-white/20">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <Bot className="w-6 h-6 text-yellow-400" />
-              <Zap className="w-5 h-5 text-yellow-400" />
-              <span className="text-lg font-bold text-white">KI-SOFORT-SERVICES</span>
-              <Zap className="w-5 h-5 text-yellow-400" />
-              <Bot className="w-6 h-6 text-yellow-400" />
-            </div>
-            <p className="text-center text-white/90 mb-6">
-              Revolutionäre KI-Technologie für sofortige Immobilienbewertung • Kostenlos • Präzise • Rund um die Uhr
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-3 bg-gradient-to-r from-[#566873]/20 to-[#65858C]/20 rounded-lg p-3 border border-white/20">
-                <Calculator className="w-5 h-5 text-[#65858C]" />
-                <div>
-                  <div className="font-semibold text-white text-sm">Finanzrechner</div>
-                  <div className="text-xs text-white/80">Sofort verfügbar</div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 bg-gradient-to-r from-[#566873]/20 to-[#65858C]/20 rounded-lg p-3 border border-white/20">
-                <Bot className="w-5 h-5 text-[#65858C]" />
-                <div>
-                  <div className="font-semibold text-white text-sm">AI-Bewertung</div>
-                  <div className="text-xs text-white/80">In 30 Sekunden</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* CTA Buttons - Enhanced with Service Distinction */}
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 px-4">
-            {/* AI Service - Primary CTA */}
-            <Button
-              size="lg"
-              className="w-full sm:w-auto text-white px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 border-2"
-              style={{
-                backgroundColor: '#65858C',
-                borderColor: '#566873'
-              }}
+          {/* CTA Buttons - Webflow Style */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+            <button
               onClick={scrollToValuation}
+              className="wf-button group"
               data-testid="button-hero-ai-valuation"
             >
               <Bot className="mr-2 w-5 h-5" />
-              🤖 {heroContent.ctaText}
-              <Zap className="ml-2 w-4 h-4" style={{color: '#D9CDBF'}} />
-            </Button>
+              {heroContent.ctaText}
+              <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
 
-            {/* Calculator - Secondary AI Service */}
-            <Button
-              onClick={() => {
-                const calculatorSection = document.getElementById("calculator");
-                if (calculatorSection) {
-                  calculatorSection.scrollIntoView({ behavior: "smooth" });
-                }
-              }}
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto border-2 border-green-400/50 text-white hover:bg-green-400/20 font-semibold px-6 sm:px-8 py-4 sm:py-5 text-base sm:text-lg rounded-full backdrop-blur-sm bg-white/10"
-              data-testid="button-hero-calculator"
-            >
-              <Calculator className="mr-2 w-5 h-5 text-green-400" />
-              {t('nav.calculator')}
-            </Button>
-
-            {/* Human Contact - Tertiary */}
-            <Button
+            <button
               onClick={scrollToContact}
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto border-white/50 text-white hover:bg-white hover:text-[var(--ruskin-blue)] font-medium px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base rounded-full backdrop-blur-sm bg-white/10"
+              className="wf-button is-secondary"
               data-testid="button-hero-contact"
             >
               <Phone className="mr-2 w-4 h-4" />
               {t('hero.call')}
-            </Button>
+            </button>
           </div>
 
-          {/* Service Distinction Banner */}
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-8 text-sm">
-            <div className="flex items-center space-x-2 bg-blue-500/20 rounded-full px-4 py-2">
-              <Clock className="w-4 h-4 text-blue-400" />
-              <span className="text-white font-medium">KI: Sofort verfügbar</span>
+          {/* Stats Grid - Webflow Style */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-4xl mx-auto pt-12 border-t border-gray-200">
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2" style={{ color: 'var(--wf-accent-primary)' }}>3k+</div>
+              <div className="text-sm" style={{ color: 'rgba(0, 0, 31, 0.6)' }}>
+                {language === 'de' ? 'Zufriedene Kunden' : 'Satisfied Customers'}
+              </div>
             </div>
-            <div className="flex items-center space-x-2 bg-orange-500/20 rounded-full px-4 py-2">
-              <Phone className="w-4 h-4 text-orange-400" />
-              <span className="text-white font-medium">Beratung: Terminvereinbarung</span>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2" style={{ color: 'var(--wf-accent-primary)' }}>80+</div>
+              <div className="text-sm" style={{ color: 'rgba(0, 0, 31, 0.6)' }}>
+                {language === 'de' ? 'Verkaufte Immobilien' : 'Properties Sold'}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2" style={{ color: 'var(--wf-accent-primary)' }}>98%</div>
+              <div className="text-sm" style={{ color: 'rgba(0, 0, 31, 0.6)' }}>{t('stats.success')}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold mb-2" style={{ color: 'var(--wf-accent-primary)' }}>10+</div>
+              <div className="text-sm" style={{ color: 'rgba(0, 0, 31, 0.6)' }}>
+                {language === 'de' ? 'Jahre Erfahrung' : 'Years Experience'}
+              </div>
             </div>
           </div>
 
           {/* Contact Info */}
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-8 text-bodensee-bermuda-sand">
-            <div className="flex items-center space-x-2">
-              <Phone className="w-4 h-4 text-white" />
-              <span className="text-white">+49-7541-371648</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Mail className="w-4 h-4 text-white" />
-              <span className="text-white">mueller@bimm-fn.de</span>
-            </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
+            <a href="tel:+4975413716448" className="flex items-center gap-2 text-webflow-neutral-inverse hover:text-webflow-accent-primary transition-colors">
+              <Phone className="w-4 h-4" />
+              <span>+49-7541-371648</span>
+            </a>
+            <a href="mailto:mueller@bimm-fn.de" className="flex items-center gap-2 text-webflow-neutral-inverse hover:text-webflow-accent-primary transition-colors">
+              <Mail className="w-4 h-4" />
+              <span>mueller@bimm-fn.de</span>
+            </a>
           </div>
         </div>
       </div>
 
       {/* Scroll Indicator */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
-          <div className="w-1 h-3 bg-white/50 rounded-full mt-2 animate-bounce"></div>
+        <div className="w-6 h-10 border-2 rounded-full flex justify-center" style={{ borderColor: 'rgba(0, 0, 31, 0.2)' }}>
+          <div className="w-1 h-3 rounded-full mt-2 animate-bounce" style={{ backgroundColor: 'var(--wf-accent-primary)' }}></div>
         </div>
       </div>
     </section>

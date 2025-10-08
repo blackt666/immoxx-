@@ -68,147 +68,79 @@ export default function Navigation() {
   };
 
   return (
-    <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'backdrop-blur-md shadow-lg bg-white/95 border-b border-[#D9CDBF]/30'
-          : 'bg-transparent'
+    <nav className={`wf-nav fixed top-0 w-full z-50 transition-all duration-300 ${
+        isScrolled ? 'shadow-md' : ''
       }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-16 gap-4">
+      <div className="wf-container">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <div className="flex-shrink-0 bg-transparent">
-            <Link
-              to="/"
-              className="flex items-center space-x-3 bg-transparent"
-              data-testid="link-logo"
-            >
-              <div className="h-12 flex items-center bg-transparent">
-                {/* Text Logo as placeholder */}
-                <div className="text-white font-bold text-lg lg:text-xl px-2">
-                  Müller Immobilien
-                </div>
+          <Link
+            to="/"
+            className="flex items-center space-x-3"
+            data-testid="link-logo"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--wf-accent-primary)' }}>
+                <svg width="24" height="24" viewBox="0 0 33 33" fill="currentColor" style={{ color: 'var(--wf-text-on-accent)' }}>
+                  <path d="M28,0H5C2.24,0,0,2.24,0,5v23c0,2.76,2.24,5,5,5h23c2.76,0,5-2.24,5-5V5c0-2.76-2.24-5-5-5ZM29,17c-6.63,0-12,5.37-12,12h-1c0-6.63-5.37-12-12-12v-1c6.63,0,12-5.37,12-12h1c0,6.63,5.37,12,12,12v1Z" />
+                </svg>
               </div>
-            </Link>
-          </div>
-
-          {/* Desktop Navigation - Improved spacing */}
-          <div className="hidden md:block flex-1">
-            <div className="ml-6 lg:ml-10 flex items-center justify-center space-x-2 lg:space-x-3">
-              {/* Main Navigation Items */}
-              {mainNavItems.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => handleNavigation(item.href)}
-                  className={`px-2 lg:px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-white/10 whitespace-nowrap ${
-                    isScrolled ? "text-gray-700 hover:text-[var(--arctic-blue)]" : "text-white"
-                  }`}
-                  data-testid={`button-nav-${item.name.toLowerCase()}`}
-                >
-                  {item.name}
-                </button>
-              ))}
-
-              {/* AI Services - Prominent */}
-              <div className="flex items-center ml-3 lg:ml-4">
-                {aiServiceItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.name}
-                      onClick={() => handleNavigation(item.href, item.external)}
-                      className="group relative bg-gradient-to-r from-[#566873] to-[#65858C] text-white px-3 lg:px-4 py-2 rounded-full hover:shadow-lg hover:scale-105 font-semibold border-2 border-white/20 transition-all duration-300 whitespace-nowrap"
-                      data-testid={`button-ai-${item.href.replace('#', '').replace('/', '')}`}
-                    >
-                      <div className="flex items-center space-x-1 lg:space-x-2">
-                        <Icon className="w-4 h-4" />
-                        <span className="text-sm hidden lg:inline">{item.name}</span>
-                        <span className="text-xs lg:hidden">AI</span>
-                        <Zap className="w-3 h-3 text-yellow-300 opacity-80" />
-                      </div>
-                      {/* Tooltip */}
-                      <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {item.description}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Human Services - Subtle */}
-              <div className="flex items-center ml-2">
-                {humanServiceItems.slice(0, 1).map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.name}
-                      onClick={() => handleNavigation(item.href)}
-                      className={`group relative flex items-center space-x-1 px-2 lg:px-3 py-2 rounded-md text-sm font-medium transition-colors border border-white/20 hover:bg-white/10 whitespace-nowrap ${
-                        isScrolled ? "text-gray-700 hover:text-[var(--arctic-blue)]" : "text-white"
-                      }`}
-                      data-testid={`button-human-${item.href.replace('#', '')}`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="hidden lg:inline">{item.name}</span>
-                      <span className="lg:hidden">Kontakt</span>
-                      {/* Tooltip */}
-                      <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {item.description}
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="font-manrope">
+                <div className="text-base font-bold" style={{ color: 'var(--wf-neutral-inverse)' }}>Immobilien am Bodensee</div>
               </div>
             </div>
-          </div>
+          </Link>
 
-          {/* Right Side Container - Responsive Layout */}
-          <div className="flex items-center">
-            {/* Contact Info - Phone only */}
-            <div className="hidden 2xl:flex items-center space-x-3 mr-4">
-              <div className="flex items-center space-x-1 text-sm">
-                <Phone className="w-4 h-4" />
-                <a
-                  href="tel:+491608066630"
-                  className={`hover:underline ${isScrolled ? "text-gray-700" : "text-white"}`}
-                >
-                  +49 160 8066630
-                </a>
-              </div>
-            </div>
-
-            {/* Phone only on xl screens */}
-            <div className="hidden xl:flex 2xl:hidden items-center space-x-1 text-sm mr-4">
-              <Phone className="w-4 h-4" />
-              <a
-                href="tel:+491608066630"
-                className={`hover:underline ${isScrolled ? "text-gray-700" : "text-white"}`}
-              >
-                +49 160 8066630
-              </a>
-            </div>
-
-            {/* Language Selector */}
-            <div className="flex items-center mr-2">
-              <LanguageSelector isScrolled={isScrolled} />
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden ml-2">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            {mainNavItems.map((item) => (
               <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={`p-2 rounded-md transition-colors ${
-                  isScrolled ? "text-gray-700" : "text-white"
-                }`}
-                aria-label="Toggle navigation menu"
+                key={item.name}
+                onClick={() => handleNavigation(item.href)}
+                className="text-sm font-medium transition-colors hover:text-webflow-accent-primary"
+                style={{ color: isScrolled ? 'var(--wf-neutral-inverse)' : 'var(--wf-neutral-inverse)' }}
+                data-testid={`button-nav-${item.name.toLowerCase()}`}
               >
-                {isOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Menu className="w-6 h-6" />
-                )}
+                {item.name}
+              </button>
+            ))}
+            
+            {/* CTA Buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleNavigation('/ai-valuation', true)}
+                className="wf-button text-sm py-2 px-4"
+                data-testid="button-ai-valuation"
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                {t('nav.ai.valuation', 'AI-Bewertung')}
+              </button>
+              
+              <button
+                onClick={() => handleNavigation("#contact")}
+                className="wf-button is-secondary text-sm py-2 px-4"
+                data-testid="button-contact"
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                {t('nav.human.contact', 'Kontakt')}
               </button>
             </div>
+            
+            {/* Language Selector */}
+            <LanguageSelector isScrolled={isScrolled} />
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden flex items-center gap-2">
+            <LanguageSelector isScrolled={isScrolled} />
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2 rounded-md transition-colors"
+              style={{ color: 'var(--wf-neutral-inverse)' }}
+              aria-label="Toggle navigation menu"
+            >
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
       </div>
@@ -216,38 +148,56 @@ export default function Navigation() {
       {/* Mobile Navigation */}
       {isOpen && (
         <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/95 backdrop-blur-md border-t border-gray-100">
-            {/* Main Navigation */}
+          <div className="px-4 pt-2 pb-4 space-y-2" style={{ backgroundColor: 'var(--wf-neutral-primary)', borderTop: '1px solid rgba(0, 0, 31, 0.1)' }}>
             {mainNavItems.map((item) => (
               <button
                 key={item.name}
                 onClick={() => handleNavigation(item.href)}
-                className="block px-3 py-2 rounded-md text-base font-medium w-full text-left text-gray-700 hover:text-[var(--arctic-blue)] hover:bg-gray-50"
+                className="block w-full text-left px-4 py-3 rounded-lg text-base font-medium transition-colors hover:bg-webflow-neutral-secondary"
+                style={{ color: 'var(--wf-neutral-inverse)' }}
                 data-testid={`button-mobile-nav-${item.name.toLowerCase()}`}
               >
                 {item.name}
               </button>
             ))}
 
-            {/* AI Services Section */}
-            <div className="pt-3 border-t border-gray-200">
-              <div className="px-3 py-2">
-                <div className="flex items-center space-x-2 text-sm font-semibold text-[var(--arctic-blue)]">
-                  <Zap className="w-4 h-4" />
-                  <span>{t('nav.ai.title', 'Sofort-Services')}</span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">{t('nav.ai.subtitle', 'Automatisiert • Kostenlos • Sofort')}</p>
-              </div>
-              {aiServiceItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => handleNavigation(item.href, item.external)}
-                    className="flex items-center space-x-3 w-full px-3 py-3 text-left bg-gradient-to-r from-[#566873] to-[#65858C] text-white rounded-lg mx-3 mb-2 hover:opacity-90 shadow-lg transition-opacity duration-200"
-                    data-testid={`button-mobile-ai-${item.href.replace('#', '').replace('/', '')}`}
-                  >
-                    <Icon className="w-5 h-5" />
+            <div className="pt-2 space-y-2">
+              <button
+                onClick={() => handleNavigation('/ai-valuation', true)}
+                className="wf-button w-full justify-center"
+                data-testid="button-mobile-ai-valuation"
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                {t('nav.ai.valuation', 'AI-Bewertung')}
+              </button>
+              
+              <button
+                onClick={() => handleNavigation("#contact")}
+                className="wf-button is-secondary w-full justify-center"
+                data-testid="button-mobile-contact"
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                {t('nav.human.contact', 'Kontakt')}
+              </button>
+            </div>
+
+            {/* Contact Info in Mobile Menu */}
+            <div className="pt-3 border-t space-y-2" style={{ borderColor: 'rgba(0, 0, 31, 0.1)' }}>
+              <a
+                href="tel:+4975413716448"
+                className="flex items-center gap-2 px-4 py-2 text-sm"
+                style={{ color: 'var(--wf-neutral-inverse)' }}
+              >
+                <Phone className="w-4 h-4" />
+                +49-7541-371648
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}
                     <div>
                       <span className="font-semibold">{item.name}</span>
                       <div className="flex items-center space-x-1 mt-1">
