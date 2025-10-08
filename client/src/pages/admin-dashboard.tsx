@@ -14,12 +14,13 @@ import SystemDiagnostic from "@/components/admin/system-diagnostic";
 import SEOStrategyEditor from "@/components/admin/seo-strategy-editor";
 import PropertyAutoGenerator from "@/components/admin/property-auto-generator";
 import PerformanceDashboard from "../components/admin/performance-dashboard";
+import Architecture3DGenerator from "@/components/admin/architecture-3d-generator";
 import CRMCustomers from "../pages/admin/crm-customers";
 import CRMAppointments from "../pages/admin/crm-appointments";
 import CRMLeads from "../pages/admin/crm-leads";
 import CalendarIntegration from "../components/CalendarIntegration";
 import { useState } from "react";
-import { Menu, X, LayoutDashboard, Building, Image, MessageSquare, Send, Edit, Link, Settings, Activity, LogOut, FileText, Target, Search, HelpCircle, Users, Calendar, TrendingUp, RefreshCw } from "lucide-react";
+import { Menu, X, LayoutDashboard, Building, Image, MessageSquare, Send, Edit, Link, Settings, Activity, LogOut, FileText, Target, Search, HelpCircle, Users, Calendar, TrendingUp, RefreshCw, Box } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardSearch from "@/components/admin/dashboard-search";
 import DashboardHelp from "@/components/admin/dashboard-help";
@@ -128,7 +129,8 @@ export default function AdminDashboard() {
     "crm-customers": { title: "CRM - Kunden", subtitle: "Verwalten Sie Ihre Kundenbeziehungen" },
     "crm-appointments": { title: "CRM - Termine", subtitle: "Verwalten Sie Ihre Termine und Besichtigungen" },
     "crm-leads": { title: "CRM - Leads", subtitle: "Verwalten Sie Ihre Sales Pipeline" },
-    "calendar-integration": { title: "Kalender-Integration", subtitle: "Verwalten Sie Ihre Kalender-Verbindungen" }
+    "calendar-integration": { title: "Kalender-Integration", subtitle: "Verwalten Sie Ihre Kalender-Verbindungen" },
+    "3d-generator": { title: "3D Architektur Generator", subtitle: "Wandeln Sie Baupläne in 3D-Modelle um" }
   };
 
   const currentTab = tabTitles[activeTab as keyof typeof tabTitles] || tabTitles.dashboard;
@@ -167,6 +169,8 @@ export default function AdminDashboard() {
         return <CRMLeads />;
       case "calendar-integration":
         return <CalendarIntegration />;
+      case "3d-generator":
+        return <Architecture3DGenerator />;
       default:
         return <DashboardOverview onTabChange={setActiveTab} />;
     }
@@ -211,6 +215,7 @@ export default function AdminDashboard() {
                 <NavItem icon={Building} label="Immobilien" isActive={activeTab === 'properties'} onClick={() => setActiveTab('properties')} />
                 <NavItem icon={Image} label="Galerie" isActive={activeTab === 'gallery'} onClick={() => setActiveTab('gallery')} />
                 <NavItem icon={MessageSquare} label="Anfragen" isActive={activeTab === 'inquiries'} onClick={() => setActiveTab('inquiries')} />
+                <NavItem icon={Box} label="3D Generator" isActive={activeTab === '3d-generator'} onClick={() => setActiveTab('3d-generator')} />
                 
                 {/* CRM Section */}
                 <div className="pt-2 mt-2 border-t border-white/20">
