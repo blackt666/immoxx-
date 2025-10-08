@@ -11,13 +11,15 @@ router.get('/', async (req, res) => {
   try {
     const { propertyId } = req.query;
     
-    let query = db.select().from(floorPlans).orderBy(desc(floorPlans.createdAt));
-    
+    let allFloorPlans;
     if (propertyId) {
-      query = query.where(eq(floorPlans.propertyId, parseInt(propertyId as string)));
+      allFloorPlans = await db.select().from(floorPlans)
+        .where(eq(floorPlans.propertyId, parseInt(propertyId as string)))
+        .orderBy(desc(floorPlans.createdAt));
+    } else {
+      allFloorPlans = await db.select().from(floorPlans).orderBy(desc(floorPlans.createdAt));
     }
     
-    const allFloorPlans = await query;
     res.json(allFloorPlans);
   } catch (error) {
     log.error('Error fetching floor plans:', error);
@@ -48,7 +50,7 @@ router.post('/', async (req, res) => {
     const planData = req.body;
     
     const [newPlan] = await db.insert(floorPlans).values({
-      propertyId: planData.propertyId || null,
+      propertyId: planData.propertyId ? parseInt(planData.propertyId) : null,
       name: planData.name,
       description: planData.description,
       floorLevel: planData.floorLevel || 'ground',
@@ -57,7 +59,7 @@ router.post('/', async (req, res) => {
       totalArea: planData.totalArea ? parseFloat(planData.totalArea) : null,
       dimensions: JSON.stringify(planData.dimensions || {}),
       status: planData.status || 'draft',
-      isPublic: planData.isPublic || false,
+      isPublic: Boolean(planData.isPublic),
       createdBy: req.session?.user?.id || 1,
     }).returning();
     

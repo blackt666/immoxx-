@@ -43,6 +43,7 @@ router.post('/', async (req, res) => {
     const projectData = req.body;
     
     const [newProject] = await db.insert(projects).values({
+      propertyId: projectData.propertyId ? parseInt(projectData.propertyId) : null,
       name: projectData.name,
       description: projectData.description,
       projectType: projectData.projectType,
@@ -127,6 +128,7 @@ router.post('/:id/tasks', async (req, res) => {
     
     const [newTask] = await db.insert(projectTasks).values({
       projectId,
+      parentTaskId: taskData.parentTaskId ? parseInt(taskData.parentTaskId) : null,
       title: taskData.title,
       description: taskData.description,
       taskType: taskData.taskType || 'task',
@@ -134,7 +136,7 @@ router.post('/:id/tasks', async (req, res) => {
       priority: taskData.priority || 'medium',
       startDate: taskData.startDate ? new Date(taskData.startDate) : null,
       dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
-      assignedTo: taskData.assignedTo,
+      assignedTo: taskData.assignedTo ? parseInt(taskData.assignedTo) : null,
       progress: 0,
       createdBy: req.session?.user?.id || 1,
     }).returning();
@@ -191,10 +193,11 @@ router.get('/:id/comments', async (req, res) => {
 router.post('/:id/comments', async (req, res) => {
   try {
     const projectId = parseInt(req.params.id);
-    const { content, commentType } = req.body;
+    const { content, commentType, taskId } = req.body;
     
     const [newComment] = await db.insert(projectComments).values({
       projectId,
+      taskId: taskId ? parseInt(taskId) : null,
       content,
       commentType: commentType || 'comment',
       createdBy: req.session?.user?.id || 1,

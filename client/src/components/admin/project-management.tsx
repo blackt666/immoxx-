@@ -45,7 +45,7 @@ import {
   Pause,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { fetchApi, apiRequest } from '@/lib/queryClient';
+import { apiRequest } from '@/lib/queryClient';
 
 interface Project {
   id: number;
@@ -340,7 +340,7 @@ export default function ProjectManagement() {
   // Fetch projects
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['/api/projects'],
-    queryFn: () => fetchApi<Project[]>('/api/projects'),
+    queryFn: () => apiRequest<Project[]>('/api/projects'),
   });
 
   // Create project mutation
@@ -380,7 +380,7 @@ export default function ProjectManagement() {
   });
 
   // Filter projects
-  const filteredProjects = projects.filter(project => {
+  const filteredProjects = projects.filter((project: Project) => {
     const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           project.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -390,11 +390,11 @@ export default function ProjectManagement() {
   // Calculate statistics
   const stats = {
     total: projects.length,
-    inProgress: projects.filter(p => p.status === 'in_progress').length,
-    completed: projects.filter(p => p.status === 'completed').length,
-    onHold: projects.filter(p => p.status === 'on_hold').length,
-    totalBudget: projects.reduce((sum, p) => sum + (p.estimatedBudget || 0), 0),
-    totalSpent: projects.reduce((sum, p) => sum + (p.actualBudget || 0), 0),
+    inProgress: projects.filter((p: Project) => p.status === 'in_progress').length,
+    completed: projects.filter((p: Project) => p.status === 'completed').length,
+    onHold: projects.filter((p: Project) => p.status === 'on_hold').length,
+    totalBudget: projects.reduce((sum: number, p: Project) => sum + (p.estimatedBudget || 0), 0),
+    totalSpent: projects.reduce((sum: number, p: Project) => sum + (p.actualBudget || 0), 0),
   };
 
   const handleEdit = (project: Project) => {
@@ -544,7 +544,7 @@ export default function ProjectManagement() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map(project => (
+          {filteredProjects.map((project: Project) => (
             <ProjectCard
               key={project.id}
               project={project}
