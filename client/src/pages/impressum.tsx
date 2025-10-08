@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Link } from "wouter";
-import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { ArrowLeft, Mail, Phone } from "lucide-react";
 
 export default function Impressum() {
   useEffect(() => {

@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, MapPin, Phone, Mail, Bot, Zap, Clock, Calculator, Star } from "lucide-react";
+import { MapPin, Phone, Mail, Bot, Zap, Clock, Calculator } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-interface HeroContent {
-  title: string;
-  subtitle: string;
-  ctaText: string;
-  backgroundImage: string;
-}
 
 export default function HeroSection() {
   const { t, language } = useLanguage();
@@ -42,8 +35,6 @@ export default function HeroSection() {
     backgroundImage
   };
 
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -54,7 +45,6 @@ export default function HeroSection() {
   }, [heroContent?.backgroundImage]);
 
   const handleVideoLoad = () => {
-    setIsVideoLoaded(true);
     console.log("Video data loaded");
   };
 

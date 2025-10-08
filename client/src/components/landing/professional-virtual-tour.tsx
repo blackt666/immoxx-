@@ -16,18 +16,11 @@ import {
   Settings,
   Share2,
   Download,
-  Volume2,
-  VolumeX,
   Eye,
   Camera,
   Compass,
   Grid,
   Layers,
-  Home,
-  Navigation,
-  ZoomIn,
-  ZoomOut,
-  Move3D,
   MousePointer,
   Smartphone,
   Monitor,
@@ -50,7 +43,7 @@ interface ProHotspot {
   color?: string;
   action?: {
     type: "navigate" | "popup" | "external" | "download";
-    data: any;
+    data: unknown;
   };
 }
 

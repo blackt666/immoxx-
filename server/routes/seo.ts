@@ -28,7 +28,7 @@ router.get("/seo-strategies/active", async (req, res) => {
 router.get("/seo-strategies", async (req, res) => {
   try {
     res.json([{ id: 1, name: "Default Strategy", isActive: true }]);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch strategies" });
   }
 });
@@ -36,7 +36,7 @@ router.get("/seo-strategies", async (req, res) => {
 router.post("/seo-strategies", async (req, res) => {
   try {
     res.json({ message: "Acknowledged", id: req.body.id || 1 });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to save strategy" });
   }
 });
@@ -44,7 +44,7 @@ router.post("/seo-strategies", async (req, res) => {
 router.post("/seo-strategies/:id/activate", async (req, res) => {
   try {
     res.json({ message: "Activated (using defaults)" });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to activate" });
   }
 });
@@ -55,7 +55,7 @@ router.get("/seo/meta/:section", async (req, res) => {
     const metaTags = await SEOManager.generateMetaTags(req.params.section, baseUrl);
     res.setHeader("Content-Type", "text/html");
     res.send(metaTags);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to generate meta tags" });
   }
 });
@@ -67,7 +67,7 @@ router.get("/structured-data/property/:id", async (req, res) => {
     const data = await StructuredDataManager.generatePropertyStructuredData(id, baseUrl);
     res.setHeader("Content-Type", "application/ld+json");
     res.send(data);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to generate structured data" });
   }
 });
@@ -78,7 +78,7 @@ router.get("/structured-data/organization", async (req, res) => {
     const data = await StructuredDataManager.generateOrganizationStructuredData(baseUrl);
     res.setHeader("Content-Type", "application/ld+json");
     res.send(data);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to generate structured data" });
   }
 });

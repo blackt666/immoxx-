@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Eye, MapPin, Bed, Bath, Square } from "lucide-react";
+import { Eye, MapPin, Square } from "lucide-react";
 
 export default function PropertiesNavigation() {
   const [isVisible, setIsVisible] = useState(false);

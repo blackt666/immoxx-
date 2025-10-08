@@ -16,7 +16,7 @@ import connectPgSimple from "connect-pg-simple";
 import { storage } from "./storage.js";
 import { PerformanceMonitor } from "./lib/performance-monitor.js";
 import { startRateLimitCleanup } from "./services/rateLimitingService.js";
-import { logger, log } from "./lib/logger.js";
+import { log } from "./lib/logger.js";
 // setupVite will be dynamically imported only when needed in development
 
 // Add global type declarations
@@ -25,7 +25,6 @@ declare global {
   var initializationError: Error | null;
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 // Use PORT environment variable for Replit autoscale deployment
 const PORT = Number(process.env.PORT) || 5000;
@@ -233,7 +232,7 @@ if (process.env.NODE_ENV !== 'production') {
       app.use(express.static(fallbackPath));
       console.log('📦 Serving frontend from server/public (fallback)');
     }
-  } catch (e) {
+  } catch {
     app.use(express.static(fallbackPath));
     console.log('📦 Serving frontend from server/public (error fallback)');
   }
@@ -386,7 +385,7 @@ async function continueBackgroundInitialization() {
           } else {
             res.sendFile(fallbackIndex);
           }
-        } catch (e) {
+        } catch {
           res.sendFile(fallbackIndex);
         }
       });

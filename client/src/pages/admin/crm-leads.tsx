@@ -18,19 +18,14 @@ import {
   TrendingUp,
   Euro,
   Calendar,
-  User,
   Home,
   Eye,
   Edit,
   Trash2,
-  ArrowUp,
-  ArrowDown,
-  Minus,
   DollarSign,
   Percent,
   Clock,
-  AlertCircle,
-  CheckCircle
+  AlertCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';

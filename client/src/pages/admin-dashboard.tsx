@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../lib/auth";
-import SidebarNavigation from "@/components/admin/sidebar-navigation";
 import DashboardOverview from "@/components/admin/dashboard-overview";
 import PropertiesManagement from "@/components/admin/properties-management";
 import GalleryManagement from "@/components/admin/gallery-management";
@@ -20,18 +19,9 @@ import CRMLeads from "../pages/admin/crm-leads";
 import CalendarIntegration from "../components/CalendarIntegration";
 import { useState } from "react";
 import { Menu, X, LayoutDashboard, Building, Image, MessageSquare, Send, Edit, Link, Settings, Activity, LogOut, FileText, Target, Search, HelpCircle, Users, Calendar, TrendingUp, RefreshCw } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardSearch from "@/components/admin/dashboard-search";
 import DashboardHelp from "@/components/admin/dashboard-help";
 import NotificationBell from "@/components/admin/notification-bell";
-
-
-interface User {
-  id: string;
-  username: string;
-  name?: string;
-  email?: string;
-}
 
 interface NavItemProps {
   icon: React.ElementType;
