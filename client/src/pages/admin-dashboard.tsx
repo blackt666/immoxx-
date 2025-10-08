@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "../lib/auth";
+import { useAuth } from "@/lib/queryClient";
 import SidebarNavigation from "@/components/admin/sidebar-navigation";
 import DashboardOverview from "@/components/admin/dashboard-overview";
 import PropertiesManagement from "@/components/admin/properties-management";
@@ -62,9 +62,8 @@ export default function AdminDashboard() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  // Check authentication
-  const { user } = useAuth();
-  const isLoading = false; // Auth context doesn't have loading state
+  // Check authentication using React Query
+  const { data: user, isLoading, error } = useAuth();
 
   // Set activeTab based on current URL path
   useEffect(() => {
@@ -113,7 +112,7 @@ export default function AdminDashboard() {
   console.log('✅ User authenticated:', user);
 
   const tabTitles = {
-    dashboard: { title: "Dashboard", subtitle: `Willkommen zurück, ${user?.name || user?.username || 'Admin'}` },
+    dashboard: { title: "Dashboard", subtitle: `Willkommen zurück, ${user?.user?.name || user?.user?.username || 'Admin'}` },
     properties: { title: "Immobilien", subtitle: "Verwalten Sie Ihre Immobilien" },
     gallery: { title: "Galerie", subtitle: "Bilder verwalten und organisieren" },
     inquiries: { title: "Anfragen", subtitle: "Kundenanfragen bearbeiten" },
