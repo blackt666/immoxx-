@@ -30,6 +30,7 @@ declare module 'express-session' {
 
 // Extend Express Request interface to include agentId
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       agentId?: string;

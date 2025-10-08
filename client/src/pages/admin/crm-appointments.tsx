@@ -85,14 +85,6 @@ const typeColors = {
   follow_up: 'bg-yellow-100 text-yellow-800'
 };
 
-const typeIcons = {
-  property_viewing: Home,
-  consultation: User,
-  valuation: CheckCircle,
-  contract_signing: Edit,
-  follow_up: CalendarDays
-};
-
 export default function CRMAppointments() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
@@ -169,15 +161,6 @@ export default function CRMAppointments() {
     try {
       const date = new Date(dateString);
       return format(date, 'dd.MM.yyyy, HH:mm', { locale: de });
-    } catch {
-      return dateString;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return format(date, 'dd.MM.yyyy', { locale: de });
     } catch {
       return dateString;
     }

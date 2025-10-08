@@ -99,15 +99,6 @@ export function FullStackStatusIndicator() {
   useEffect(() => {
     fetchStatus();
   }, []);
-    } catch (error) {
-      console.error("Status check error:", error);
-      setApiStatus({
-        status: "error",
-        message: "API nicht erreichbar",
-        responseTime: null,
-      });
-    }
-  };
 
   // Modify the main useEffect to correctly integrate the new logic
   useEffect(() => {

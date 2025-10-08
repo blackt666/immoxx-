@@ -3,6 +3,9 @@ node_modules/
 *.log
 npm-debug.log*
 
+# Client dependencies
+client/node_modules/
+
 # Build outputs
 dist/
 build/
