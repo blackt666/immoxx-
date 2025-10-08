@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Webflow Theme */
+@import './styles/webflow-theme.css';
+
 /* Prevent any blinking animations */
 * {
   animation-duration: 0s !important;

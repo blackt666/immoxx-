@@ -1,0 +1,333 @@
+/* Webflow Theme - Extracted from real-estate-3d85d2.webflow 2 */
+/* Core Design System Variables */
+
+:root {
+  /* Core Colors */
+  --wf-accent-primary: #5ac1ff;
+  --wf-accent-primary-hover: #97d8ff;
+  --wf-neutral-primary: #ffffff;
+  --wf-neutral-secondary: #f6f7f9;
+  --wf-neutral-inverse: #00001f;
+  --wf-text-on-accent: #00001f;
+  
+  /* Spacing System */
+  --wf-spacing-0-5x: 0.5rem;
+  --wf-spacing-1x: 1rem;
+  --wf-spacing-1-25x: 1.25rem;
+  --wf-spacing-1-5x: 1.5rem;
+  --wf-spacing-2x: 2rem;
+  --wf-spacing-3x: 3rem;
+  --wf-spacing-4x: 4rem;
+  --wf-spacing-5x: 5rem;
+  --wf-spacing-6x: 6rem;
+  --wf-spacing-7x: 7rem;
+  --wf-spacing-8x: 8rem;
+  
+  /* Container Sizes */
+  --wf-container-width: 1280px;
+  --wf-container-lg-width: 1440px;
+  --wf-container-sm-width: 1000px;
+  
+  /* Section Padding */
+  --wf-section-padding-vertical: var(--wf-spacing-8x);
+  
+  /* Gap Sizes */
+  --wf-gap-xs: var(--wf-spacing-1x);
+  --wf-gap-sm: var(--wf-spacing-2x);
+  --wf-gap-md: var(--wf-spacing-3x);
+  --wf-gap-lg: var(--wf-spacing-4x);
+  --wf-gap-xl: var(--wf-spacing-5x);
+  
+  /* Border Radius */
+  --wf-radius-sm: 0.25rem;
+  --wf-radius-md: 0.5rem;
+  --wf-radius-lg: 0.75rem;
+  --wf-radius-xl: 1rem;
+  --wf-radius-round: 100rem;
+  
+  /* Typography */
+  --wf-font-heading: 'Manrope', sans-serif;
+  --wf-font-body: 'Manrope', sans-serif;
+  
+  /* Card Styles */
+  --wf-card-padding: var(--wf-spacing-2x);
+  --wf-card-radius: var(--wf-radius-lg);
+  --wf-image-radius: var(--wf-radius-lg);
+}
+
+/* Webflow-inspired utility classes */
+.wf-section {
+  padding-top: var(--wf-section-padding-vertical);
+  padding-bottom: var(--wf-section-padding-vertical);
+}
+
+.wf-section.is-secondary {
+  background-color: var(--wf-neutral-secondary);
+}
+
+.wf-section.is-inverse {
+  background-color: var(--wf-neutral-inverse);
+  color: var(--wf-neutral-primary);
+}
+
+.wf-section.is-accent-primary {
+  background-color: var(--wf-accent-primary);
+  color: var(--wf-text-on-accent);
+}
+
+.wf-container {
+  max-width: var(--wf-container-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--wf-spacing-1x);
+  padding-right: var(--wf-spacing-1x);
+}
+
+.wf-container-lg {
+  max-width: var(--wf-container-lg-width);
+}
+
+.wf-container-sm {
+  max-width: var(--wf-container-sm-width);
+}
+
+/* Button Styles */
+.wf-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--wf-radius-md);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  background-color: var(--wf-accent-primary);
+  color: var(--wf-text-on-accent);
+}
+
+.wf-button:hover {
+  background-color: var(--wf-accent-primary-hover);
+  transform: translateY(-1px);
+}
+
+.wf-button.is-secondary {
+  background-color: transparent;
+  border: 2px solid var(--wf-accent-primary);
+  color: var(--wf-accent-primary);
+}
+
+.wf-button.is-secondary:hover {
+  background-color: var(--wf-accent-primary);
+  color: var(--wf-text-on-accent);
+}
+
+/* Card Styles */
+.wf-card {
+  background-color: var(--wf-neutral-primary);
+  border-radius: var(--wf-card-radius);
+  padding: var(--wf-card-padding);
+  box-shadow: 0 2px 8px rgba(0, 0, 31, 0.08);
+  transition: all 0.3s ease;
+}
+
+.wf-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 31, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Image Styles */
+.wf-image-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--wf-image-radius);
+}
+
+/* Grid Utilities */
+.wf-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--wf-gap-md);
+}
+
+.wf-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--wf-gap-md);
+}
+
+.wf-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--wf-gap-md);
+}
+
+.wf-grid-6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--wf-gap-md);
+}
+
+/* Flex Utilities */
+.wf-flex-horizontal {
+  display: flex;
+  flex-direction: row;
+  gap: var(--wf-gap-md);
+}
+
+.wf-flex-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wf-gap-md);
+}
+
+.wf-flex-center {
+  align-items: center;
+  justify-content: center;
+}
+
+.wf-flex-wrap {
+  flex-wrap: wrap;
+}
+
+/* Spacing Utilities */
+.wf-gap-xs { gap: var(--wf-gap-xs); }
+.wf-gap-sm { gap: var(--wf-gap-sm); }
+.wf-gap-md { gap: var(--wf-gap-md); }
+.wf-gap-lg { gap: var(--wf-gap-lg); }
+.wf-gap-xl { gap: var(--wf-gap-xl); }
+
+/* Responsive */
+@media (max-width: 991px) {
+  :root {
+    --wf-section-padding-vertical: var(--wf-spacing-7x);
+  }
+  
+  .wf-grid-2,
+  .wf-grid-3,
+  .wf-grid-4,
+  .wf-grid-6 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --wf-section-padding-vertical: var(--wf-spacing-6x);
+  }
+  
+  .wf-grid-2,
+  .wf-grid-3,
+  .wf-grid-4,
+  .wf-grid-6 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 479px) {
+  :root {
+    --wf-section-padding-vertical: var(--wf-spacing-5x);
+  }
+}
+
+/* Typography Styles */
+.wf-heading-h1 {
+  font-family: var(--wf-font-heading);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.wf-heading-h2 {
+  font-family: var(--wf-font-heading);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 0.75rem;
+}
+
+.wf-heading-h3 {
+  font-family: var(--wf-font-heading);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+}
+
+.wf-heading-h4 {
+  font-family: var(--wf-font-heading);
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+}
+
+.wf-subheading {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: rgba(0, 0, 31, 0.7);
+}
+
+.wf-eyebrow {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--wf-accent-primary);
+  margin-bottom: 0.5rem;
+}
+
+/* Navigation Styles */
+.wf-nav {
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(0, 0, 31, 0.1);
+}
+
+.wf-nav.is-inverse {
+  background-color: rgba(0, 0, 31, 0.95);
+  color: var(--wf-neutral-primary);
+}
+
+/* Logo Showcase */
+.wf-logo-showcase {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--wf-gap-md);
+}
+
+.wf-logo {
+  width: 120px;
+  height: 40px;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.wf-logo:hover {
+  opacity: 1;
+}
+
+/* Text Color Utilities */
+.wf-text-primary {
+  color: var(--wf-neutral-inverse);
+}
+
+.wf-text-secondary {
+  color: rgba(0, 0, 31, 0.6);
+}
+
+.wf-text-inverse {
+  color: var(--wf-neutral-primary);
+}
+
+.wf-text-accent {
+  color: var(--wf-accent-primary);
+}

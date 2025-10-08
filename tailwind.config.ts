@@ -10,6 +10,10 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'manrope': ['Manrope', 'sans-serif'],
+        'heading': ['Manrope', 'sans-serif'],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -23,6 +27,15 @@ export default {
           'warm-beige': '#D9CDBF',
           'warm-stone': '#8C837B',
           'light-taupe': '#BFADA3',
+        },
+        // Webflow Theme Colors
+        webflow: {
+          'accent-primary': '#5ac1ff',
+          'accent-hover': '#97d8ff',
+          'neutral-primary': '#ffffff',
+          'neutral-secondary': '#f6f7f9',
+          'neutral-inverse': '#00001f',
+          'text-on-accent': '#00001f',
         },
         // shadcn/ui theme tokens (HSL CSS variables - wrap with hsl())
         background: "hsl(var(--background))",
